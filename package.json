@@ -1,5 +1,5 @@
 {
-  "name": "crm_suppa",
+  "name": "crm_suppa_nestjs",
   "workspaces": [
     "salesforce_ui",
     "backoffice"
@@ -7,7 +7,6 @@
   "catalog": {
     "@sveltejs/kit": "^2.43.2",
     "typescript": "^5.9.2",
-    "wrangler": "^4.43.0",
     "vite": "^7.1.10"
   }
 }

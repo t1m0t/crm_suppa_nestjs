@@ -1,0 +1,9 @@
+{
+    "editor.formatOnPaste": true,
+    "editor.formatOnSave": true,
+    "diffEditor.wordWrap": "off",
+    "editor.wordWrap": "on",
+    "files.associations": {
+        "*.css": "tailwindcss",
+    },
+}

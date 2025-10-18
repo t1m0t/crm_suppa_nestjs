@@ -1,6 +1,7 @@
+name: suppa-backoffice
 services:
   postgres:
-    image: postgres-postgis
+    image: postgres17-postgis
     environment:
       POSTGRES_PASSWORD: postgres
       POSTGRES_USER: postgres

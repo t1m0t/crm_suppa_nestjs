@@ -5,7 +5,7 @@ import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
 export default registerAs(
     'database',
     (): TypeOrmModuleOptions => ({
-        type: 'cockroachdb',
+        type: 'postgres',
         url: process.env.DATABASE_URL || 'postgresql://root:passwd@localhost:26257/defaultdb',
         autoLoadEntities: true,
         logging: process.env.NODE_ENV === 'development' || process.env.DATABASE_QUERY_LOGGING === '1',

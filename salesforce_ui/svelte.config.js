@@ -12,6 +12,9 @@ const config = {
 		}),
 		alias: {
 			'@/*': './src/*'
+		},
+		serviceWorker: {
+			register: process.env.NODE_ENV === 'production' // Only register in production
 		}
 	}
 };

@@ -9,13 +9,13 @@ import {
     HttpStatus
 } from '@nestjs/common';
 import type { Response } from 'express';
-import { TileService } from './tile.service';
+import { TileGeneratorService } from './tile.service';
 import { PostgresCacheService } from './postgres-cache.service';
 
 @Controller('tiles')
 export class TileController {
     constructor(
-        private readonly tileService: TileService,
+        private readonly tileService: TileGeneratorService,
         private readonly cacheService: PostgresCacheService,
     ) { }
 
@@ -35,7 +35,8 @@ export class TileController {
         const yNum = parseInt(y);
 
         try {
-            const tile = await this.tileService.getOptimizedTile(zNum, xNum, yNum);
+            const tile = await this.tileService.generateTile(zNum, xNum, yNum);
+            console.log(`Served tile ${z}/${x}/${y}, size: ${tile.length} bytes`);
             res.send(tile);
         } catch (error) {
             throw new HttpException('Error serving tile', HttpStatus.INTERNAL_SERVER_ERROR);
@@ -44,43 +45,43 @@ export class TileController {
 
     // Cache management endpoints
 
-    @Delete('cache/:z/:x/:y')
-    async clearSpecificTile(
-        @Param('z') z: string,
-        @Param('x') x: string,
-        @Param('y') y: string,
-    ) {
-        await this.tileService.clearTileCache(parseInt(z), parseInt(x), parseInt(y));
-        return { message: `Cache cleared for tile ${z}/${x}/${y}` };
-    }
+    // @Delete('cache/:z/:x/:y')
+    // async clearSpecificTile(
+    //     @Param('z') z: string,
+    //     @Param('x') x: string,
+    //     @Param('y') y: string,
+    // ) {
+    //     await this.tileService.clearTileCache(parseInt(z), parseInt(x), parseInt(y));
+    //     return { message: `Cache cleared for tile ${z}/${x}/${y}` };
+    // }
 
-    @Delete('cache/zoom/:z')
-    async clearZoomLevel(@Param('z') z: string) {
-        const count = await this.tileService.clearZoomCache(parseInt(z));
-        return { message: `Cleared ${count} tiles at zoom level ${z}` };
-    }
+    // @Delete('cache/zoom/:z')
+    // async clearZoomLevel(@Param('z') z: string) {
+    //     const count = await this.tileService.clearZoomCache(parseInt(z));
+    //     return { message: `Cleared ${count} tiles at zoom level ${z}` };
+    // }
 
-    @Delete('cache')
-    async clearAllCache() {
-        await this.tileService.clearAllCache();
-        return { message: 'All cache cleared' };
-    }
+    // @Delete('cache')
+    // async clearAllCache() {
+    //     await this.tileService.clearAllCache();
+    //     return { message: 'All cache cleared' };
+    // }
 
-    @Get('cache/stats')
-    async getCacheStats() {
-        return await this.tileService.getCacheStats();
-    }
+    // @Get('cache/stats')
+    // async getCacheStats() {
+    //     return await this.tileService.getCacheStats();
+    // }
 
-    @Get('cache/popular')
-    async getPopularTiles() {
-        return await this.tileService.getPopularTiles(20);
-    }
+    // @Get('cache/popular')
+    // async getPopularTiles() {
+    //     return await this.tileService.getPopularTiles(20);
+    // }
 
-    @Get('cache/cleanup')
-    async cleanupExpired() {
-        const count = await this.cacheService.cleanupExpired();
-        return { message: `Cleaned up ${count} expired cache entries` };
-    }
+    // @Get('cache/cleanup')
+    // async cleanupExpired() {
+    //     const count = await this.cacheService.cleanupExpired();
+    //     return { message: `Cleaned up ${count} expired cache entries` };
+    // }
 
     // TileJSON endpoint
     @Get('tiles.json')

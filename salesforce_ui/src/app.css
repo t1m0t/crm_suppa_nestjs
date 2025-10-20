@@ -1,4 +1,12 @@
 @import 'tailwindcss';
 @plugin '@tailwindcss/forms';
 @plugin '@tailwindcss/typography';
-@plugin "daisyui";
+@plugin 'daisyui';
+@import 'leaflet/dist/leaflet.css';
+
+main div {
+	height: 800px;
+}
+#map {
+	height: 180px;
+}

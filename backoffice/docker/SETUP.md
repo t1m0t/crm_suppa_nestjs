@@ -17,7 +17,7 @@ From this folder: `docker compose -f docker-compose.yml up -d`
 then in psql:
 `create database punjab_map;`
 4. Activate the extensions for the database
-Still in psql, select the database with `\c punjab_map`
+Still in psql, connect to the database with `\c punjab_map`
 Then:
 ```sql
 CREATE EXTENSION IF NOT EXISTS postgis;

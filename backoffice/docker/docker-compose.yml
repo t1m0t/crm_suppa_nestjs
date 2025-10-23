@@ -10,6 +10,27 @@ services:
       - "5432:5432"
     volumes:
       - postgres_17_data:/var/lib/postgresql/data
+    networks:
+      - backoffice-network
+
+  pg_tileserv:
+    image: pramsey/pg_tileserv:latest
+    build:
+      context: ../..
+      dockerfile: Dockerfile.alpine
+      args:
+        VERSION: latest-alpine-3.12
+    container_name: pg_tileserv
+    env_file:
+      - pg_tileserv.env
+    depends_on:
+      - postgres
+    ports:
+      - 7800:7800
+    networks:
+      - backoffice-network
 
 volumes:
   postgres_17_data:
+networks:
+  backoffice-network:

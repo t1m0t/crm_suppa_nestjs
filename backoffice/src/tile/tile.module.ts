@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ScheduleModule } from '@nestjs/schedule';
 import { TileController } from './tile.controller';
-import { TileGeneratorService } from './tile.service';
+import { TileService } from './tile.service';
 import { PostgresCacheService } from './postgres-cache.service';
 
 @Module({
@@ -10,11 +10,11 @@ import { PostgresCacheService } from './postgres-cache.service';
   ],
   controllers: [TileController],
   providers: [
-    TileGeneratorService,
+    TileService,
     PostgresCacheService,
   ],
   exports: [
-    TileGeneratorService,
+    TileService,
     PostgresCacheService,
   ],
 })

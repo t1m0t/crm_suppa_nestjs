@@ -1,0 +1,11 @@
+{
+	"folders": [
+		{
+			"path": "../backoffice"
+		},
+		{
+			"path": "../salesforce_ui"
+		}
+	],
+	"settings": {}
+}

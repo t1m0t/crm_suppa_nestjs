@@ -57,3 +57,24 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 ```
+
+# Use of pg_tileserv
+pg_tileserv runs in its own service. It is not called directly by the client (if not stated otherwise)
+
+`pg_tileserv <= nestjsapp <= client`
+
+## Setup 
+```sql
+CREATE OR REPLACE VIEW public.v_osm_points_named_notower AS
+SELECT
+  osm_id,
+  name,
+  way
+FROM
+  public.planet_osm_point  -- change to planet_osm_points if that’s your table
+WHERE
+  name IS NOT NULL
+  AND lower(name) <> 'tower';
+
+GRANT SELECT ON public.v_osm_points_named_notower TO postgres;
+```

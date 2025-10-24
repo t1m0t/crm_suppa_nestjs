@@ -36,7 +36,7 @@ export class TileController {
         const yNum = parseInt(y);
 
         try {
-            const tile = await this.tileService.getOptimizedTile(zNum, xNum, yNum);
+            const tile = await this.tileService.getTile(zNum, xNum, yNum);
             res.send(tile);
         } catch (error) {
             throw new HttpException('Error serving tile', HttpStatus.INTERNAL_SERVER_ERROR);

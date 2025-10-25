@@ -16,7 +16,7 @@
 			}).addTo(map);
 
 			// Vector tiles from pg_tileserv
-			const url = 'http://localhost:7800/public.v_osm_points_named_notower/{z}/{x}/{y}.pbf';
+			const url = 'http://localhost:3030/public.v_osm_points_named_notower/{z}/{x}/{y}.pbf';
 
 			const points = L.vectorGrid
 				.protobuf(url, {

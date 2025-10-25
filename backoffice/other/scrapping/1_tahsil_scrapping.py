@@ -43,6 +43,7 @@ async def main():
 
             data = json.loads(result.extracted_content)
             jsonRes.extend(data)
+            await asyncio.sleep(30) 
 
         if jsonRes:
             with open("ressources/tahsil.json", "w") as f:

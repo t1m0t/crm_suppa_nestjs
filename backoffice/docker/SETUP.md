@@ -63,18 +63,19 @@ pg_tileserv runs in its own service. It is not called directly by the client (if
 
 `pg_tileserv <= nestjsapp <= client`
 
-## Setup 
+## Create a view for excluding points we don't need
 ```sql
 CREATE OR REPLACE VIEW public.v_osm_points_named_notower AS
 SELECT
   osm_id,
   name,
+  place,
   way
 FROM
   public.planet_osm_point  -- change to planet_osm_points if that’s your table
 WHERE
   name IS NOT NULL
-  AND lower(name) <> 'tower';
+  AND power is null;
 
 GRANT SELECT ON public.v_osm_points_named_notower TO postgres;
 ```

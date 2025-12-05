@@ -16,7 +16,7 @@ async function bootstrap() {
       logger: new ConsoleLogger({
         logLevels: ['error', 'warn', 'log', 'debug'],
       }),
-    }
+    },
   );
   await app.listen(process.env.PORT ?? 3000);
 }

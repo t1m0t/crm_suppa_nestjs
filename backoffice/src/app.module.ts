@@ -18,11 +18,12 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
         database: configService.get('DB_DATABASE') as string,
         entities: [__dirname + '/**/*.entity{.ts,.js}'],
         synchronize: true,
-      }),
+      } as TypeOrmModuleOptions),
       inject: [ConfigService],
     }),
-    TileModule],
+    TileModule,
+  ],
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule { }
+export class AppModule {}

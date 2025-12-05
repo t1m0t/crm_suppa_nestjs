@@ -5,7 +5,7 @@ import * as zlib from 'zlib';
 import { promisify } from 'util';
 import { PostgresCacheService } from './postgres-cache.service';
 import { HttpService } from '@nestjs/axios';
-import { TILE_SERVER } from 'src/http-clients.module';
+import { TILE_SERVER } from 'src/tile/http-clients.module';
 import { firstValueFrom } from 'rxjs';
 
 const gzip = promisify(zlib.gzip);
@@ -19,15 +19,18 @@ export class TileService {
     private dataSource: DataSource,
     private cacheService: PostgresCacheService,
     @Inject(TILE_SERVER) private readonly tileServer: HttpService,
-  ) { }
+  ) {}
 
   // Convert tile coordinates to bounding box
   private tile2bbox(z: number, x: number, y: number): string {
     const n = Math.pow(2, z);
     const lon_min = (x / n) * 360.0 - 180.0;
-    const lat_min = Math.atan(Math.sinh(Math.PI * (1 - (2 * (y + 1)) / n))) * (180.0 / Math.PI);
+    const lat_min =
+      Math.atan(Math.sinh(Math.PI * (1 - (2 * (y + 1)) / n))) *
+      (180.0 / Math.PI);
     const lon_max = ((x + 1) / n) * 360.0 - 180.0;
-    const lat_max = Math.atan(Math.sinh(Math.PI * (1 - (2 * y) / n))) * (180.0 / Math.PI);
+    const lat_max =
+      Math.atan(Math.sinh(Math.PI * (1 - (2 * y) / n))) * (180.0 / Math.PI);
 
     return `ST_MakeEnvelope(${lon_min}, ${lat_min}, ${lon_max}, ${lat_max}, 4326)`;
   }
@@ -71,15 +74,20 @@ export class TileService {
       }
 
       // Generate tile
-      const response = await firstValueFrom(this.tileServer.get<Buffer>(`/${z}/${x}/${y}`));
+      const response = await firstValueFrom(
+        this.tileServer.get<Buffer>(`/${z}/${x}/${y}`),
+      );
       const gzipedTile: Buffer = response.data;
       // const tile = await this.getVectorTile(z, x, y);
       if (gzipedTile.length) {
-        this.logger.debug(`Generated tile: ${z}/${x}/${y} (size: ${gzipedTile.length} bytes)`);
+        this.logger.debug(
+          `Generated tile: ${z}/${x}/${y} (size: ${gzipedTile.length} bytes)`,
+        );
       }
       // Cache with different TTL based on zoom level
       const ttl = this.getTTL(z);
-      process.env.CACHE_TILE_ENABLED === 'true' && await this.cacheService.set(cacheKey, gzipedTile, { ttl });
+      process.env.CACHE_TILE_ENABLED === 'true' &&
+        (await this.cacheService.set(cacheKey, gzipedTile, { ttl }));
 
       return gzipedTile;
     } catch (error) {

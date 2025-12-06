@@ -1,25 +1,23 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import { InjectDataSource } from '@nestjs/typeorm';
-import { DataSource } from 'typeorm';
 import * as zlib from 'zlib';
 import { promisify } from 'util';
 import { PostgresCacheService } from './postgres-cache.service';
 import { HttpService } from '@nestjs/axios';
 import { TILE_SERVER } from 'src/tile/http-clients.module';
 import { firstValueFrom } from 'rxjs';
+import { sql } from "bun";
 
 const gzip = promisify(zlib.gzip);
 
 @Injectable()
 export class TileService {
-  private readonly logger = new Logger(TileService.name);
+  public readonly logger = new Logger(TileService.name);
 
   constructor(
-    @InjectDataSource()
-    private dataSource: DataSource,
     private cacheService: PostgresCacheService,
     @Inject(TILE_SERVER) private readonly tileServer: HttpService,
-  ) {}
+  ) {
+  }
 
   // Convert tile coordinates to bounding box
   private tile2bbox(z: number, x: number, y: number): string {
@@ -38,8 +36,7 @@ export class TileService {
   // Get raster tile (GeoJSON - for simple rendering)
   async getGeoJsonTile(z: number, x: number, y: number): Promise<any> {
     const bbox = this.tile2bbox(z, x, y);
-
-    const query = `
+    const result = await sql`
       SELECT json_build_object(
         'type', 'FeatureCollection',
         'features', json_agg(ST_AsGeoJSON(t.*)::json)
@@ -57,8 +54,6 @@ export class TileService {
         LIMIT 1000
       ) AS t
     `;
-
-    const result = await this.dataSource.query(query);
     return result[0]?.geojson || { type: 'FeatureCollection', features: [] };
   }
 

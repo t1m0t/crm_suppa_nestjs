@@ -1,7 +1,6 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
-import { InjectDataSource } from '@nestjs/typeorm';
-import { DataSource } from 'typeorm';
 import { Cron, CronExpression } from '@nestjs/schedule';
+import { sql } from "bun";
 
 export interface CacheOptions {
   ttl?: number; // Time to live in milliseconds
@@ -13,8 +12,6 @@ export class PostgresCacheService implements OnModuleInit {
   private readonly defaultTTL = 3600000; // 1 hour in milliseconds
 
   constructor(
-    @InjectDataSource()
-    private dataSource: DataSource,
   ) {}
 
   async onModuleInit() {
@@ -25,7 +22,7 @@ export class PostgresCacheService implements OnModuleInit {
   // Ensure cache table exists
   private async ensureCacheTable() {
     try {
-      await this.dataSource.query(`
+      await sql`
         CREATE TABLE IF NOT EXISTS tile_cache (
           cache_key VARCHAR(255) PRIMARY KEY,
           tile_data BYTEA NOT NULL,
@@ -33,11 +30,14 @@ export class PostgresCacheService implements OnModuleInit {
           expires_at TIMESTAMP NOT NULL,
           hit_count INTEGER DEFAULT 0,
           last_accessed TIMESTAMP DEFAULT NOW()
-        );
+        )`;
 
+      await sql`
         CREATE INDEX IF NOT EXISTS idx_tile_cache_expires ON tile_cache(expires_at);
+      `;
+      await sql`
         CREATE INDEX IF NOT EXISTS idx_tile_cache_accessed ON tile_cache(last_accessed);
-      `);
+      `;
       this.logger.log('Cache table verified');
     } catch (error) {
       this.logger.error('Error creating cache table:', error);
@@ -47,15 +47,14 @@ export class PostgresCacheService implements OnModuleInit {
   // Get value from cache
   async get<T = Buffer>(key: string): Promise<T | null> {
     try {
-      const result = await this.dataSource.query(
+      const result = await sql
         `
         UPDATE tile_cache 
         SET hit_count = hit_count + 1, last_accessed = NOW()
-        WHERE cache_key = $1 AND expires_at > NOW()
+        WHERE cache_key = ${key} AND expires_at > NOW()
         RETURNING tile_data
-        `,
-        [key],
-      );
+        `
+      ;
 
       if (result && result.length > 0) {
         this.logger.debug(`Cache hit: ${key}`);
@@ -80,19 +79,17 @@ export class PostgresCacheService implements OnModuleInit {
       const ttl = options?.ttl || this.defaultTTL;
       const expiresAt = new Date(Date.now() + ttl);
 
-      await this.dataSource.query(
+      await sql
         `
         INSERT INTO tile_cache (cache_key, tile_data, expires_at)
-        VALUES ($1, $2, $3)
+        VALUES (${key}, ${value}, ${expiresAt})
         ON CONFLICT (cache_key) 
         DO UPDATE SET 
           tile_data = EXCLUDED.tile_data,
           expires_at = EXCLUDED.expires_at,
           created_at = NOW(),
           hit_count = 0
-        `,
-        [key, value, expiresAt],
-      );
+        `;
 
       this.logger.debug(
         `Cache set: ${key} (expires: ${expiresAt.toISOString()})`,
@@ -106,10 +103,9 @@ export class PostgresCacheService implements OnModuleInit {
   // Delete specific key from cache
   async del(key: string): Promise<void> {
     try {
-      await this.dataSource.query(
-        'DELETE FROM tile_cache WHERE cache_key = $1',
-        [key],
-      );
+      await sql`
+        DELETE FROM tile_cache WHERE cache_key = ${key}
+      `;
       this.logger.debug(`Cache deleted: ${key}`);
     } catch (error) {
       this.logger.error(`Error deleting cache key ${key}:`, error);
@@ -122,10 +118,9 @@ export class PostgresCacheService implements OnModuleInit {
       // Convert pattern to PostgreSQL LIKE pattern
       const likePattern = pattern.replace(/\*/g, '%');
 
-      const result = await this.dataSource.query(
-        'DELETE FROM tile_cache WHERE cache_key LIKE $1 RETURNING cache_key',
-        [likePattern],
-      );
+      const result = await sql`
+        DELETE FROM tile_cache WHERE cache_key LIKE ${likePattern} RETURNING cache_key
+      `;
 
       const count = result.length;
       this.logger.debug(
@@ -141,9 +136,9 @@ export class PostgresCacheService implements OnModuleInit {
   // Clear all cache
   async reset(): Promise<void> {
     try {
-      const result = await this.dataSource.query(
-        'DELETE FROM tile_cache RETURNING cache_key',
-      );
+      const result = await sql`
+        DELETE FROM tile_cache RETURNING cache_key
+      `;
       this.logger.log(`Cache cleared: ${result.length} entries deleted`);
     } catch (error) {
       this.logger.error('Error clearing cache:', error);
@@ -153,9 +148,9 @@ export class PostgresCacheService implements OnModuleInit {
   // Clean up expired entries (called by cron job)
   async cleanupExpired(): Promise<number> {
     try {
-      const result = await this.dataSource.query(
-        'DELETE FROM tile_cache WHERE expires_at < NOW() RETURNING cache_key',
-      );
+      const result = await sql`
+        DELETE FROM tile_cache WHERE expires_at < NOW() RETURNING cache_key
+      `;
 
       const count = result.length;
       if (count > 0) {
@@ -171,7 +166,7 @@ export class PostgresCacheService implements OnModuleInit {
   // Get cache statistics
   async getStats() {
     try {
-      const result = await this.dataSource.query(`
+      const result = await sql`
         SELECT 
           COUNT(*) as total_entries,
           COUNT(*) FILTER (WHERE expires_at > NOW()) as active_entries,
@@ -182,7 +177,7 @@ export class PostgresCacheService implements OnModuleInit {
           MIN(created_at) as oldest_entry,
           MAX(last_accessed) as last_access
         FROM tile_cache
-      `);
+      `;
 
       return result[0];
     } catch (error) {
@@ -194,8 +189,7 @@ export class PostgresCacheService implements OnModuleInit {
   // Get most accessed tiles
   async getTopTiles(limit: number = 10) {
     try {
-      const result = await this.dataSource.query(
-        `
+      const result = await sql`
         SELECT 
           cache_key,
           hit_count,
@@ -204,10 +198,8 @@ export class PostgresCacheService implements OnModuleInit {
           expires_at > NOW() as is_active
         FROM tile_cache
         ORDER BY hit_count DESC
-        LIMIT $1
-        `,
-        [limit],
-      );
+        LIMIT ${limit}
+      `;
 
       return result;
     } catch (error) {
@@ -226,28 +218,25 @@ export class PostgresCacheService implements OnModuleInit {
   // Optional: Clean up least accessed tiles when cache grows too large
   async limitCacheSize(maxEntries: number) {
     try {
-      const countResult = await this.dataSource.query(
-        'SELECT COUNT(*) as count FROM tile_cache WHERE expires_at > NOW()',
-      );
+      const countResult = await sql`
+        SELECT COUNT(*) as count FROM tile_cache WHERE expires_at > NOW()
+      `;
 
       const currentCount = parseInt(countResult[0].count);
 
       if (currentCount > maxEntries) {
         const toDelete = currentCount - maxEntries;
 
-        await this.dataSource.query(
-          `
+        await sql`
           DELETE FROM tile_cache
           WHERE cache_key IN (
             SELECT cache_key 
             FROM tile_cache 
             WHERE expires_at > NOW()
             ORDER BY hit_count ASC, last_accessed ASC
-            LIMIT $1
+            LIMIT ${toDelete}
           )
-          `,
-          [toDelete],
-        );
+        `;
 
         this.logger.log(
           `Pruned ${toDelete} least-used cache entries to maintain size limit`,

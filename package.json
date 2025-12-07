@@ -5,8 +5,6 @@
     "backoffice"
   ],
   "catalog": {
-    "@sveltejs/kit": "^2.43.2",
-    "typescript": "^5.9.2",
-    "vite": "^7.1.10"
+    "typescript": "^5.9.2"
   }
 }

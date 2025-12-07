@@ -40,7 +40,10 @@ export class TileController {
       const tile = await this.tileService.getTile(zNum, xNum, yNum);
       res.send(tile);
     } catch (error) {
-      this.tileService.logger.error(`Error serving tile ${zNum}/${xNum}/${yNum}:`, error);
+      this.tileService.logger.error(
+        `Error serving tile ${zNum}/${xNum}/${yNum}:`,
+        error,
+      );
       throw new HttpException(
         'Error serving tile',
         HttpStatus.INTERNAL_SERVER_ERROR,

@@ -14,6 +14,7 @@ export const TILE_SERVER = Symbol('TILE_SERVER');
           timeout: 8000,
           headers: {
             Accept: 'application/vnd.mapbox-vector-tile',
+            'Content-Type': 'application/vnd.mapbox-vector-tile',
             // 'Content-Encoding': 'gzip',
           },
         });

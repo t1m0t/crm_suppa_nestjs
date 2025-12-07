@@ -5,7 +5,8 @@ import { PostgresCacheService } from './postgres-cache.service';
 import { HttpService } from '@nestjs/axios';
 import { TILE_SERVER } from 'src/tile/http-clients.module';
 import { firstValueFrom } from 'rxjs';
-import { sql } from "bun";
+import { sql } from 'bun';
+import { env } from 'process';
 
 const gzip = promisify(zlib.gzip);
 
@@ -16,8 +17,7 @@ export class TileService {
   constructor(
     private cacheService: PostgresCacheService,
     @Inject(TILE_SERVER) private readonly tileServer: HttpService,
-  ) {
-  }
+  ) {}
 
   // Convert tile coordinates to bounding box
   private tile2bbox(z: number, x: number, y: number): string {
@@ -70,10 +70,11 @@ export class TileService {
 
       // Generate tile
       const response = await firstValueFrom(
-        this.tileServer.get<Buffer>(`/${z}/${x}/${y}`),
+        this.tileServer.get<Buffer>(
+          `public.v_osm_points_named_notower/${z}/${x}/${y}.pbf`,
+        ),
       );
       const gzipedTile: Buffer = response.data;
-      // const tile = await this.getVectorTile(z, x, y);
       if (gzipedTile.length) {
         this.logger.debug(
           `Generated tile: ${z}/${x}/${y} (size: ${gzipedTile.length} bytes)`,

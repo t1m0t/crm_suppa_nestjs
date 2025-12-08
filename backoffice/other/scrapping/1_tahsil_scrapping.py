@@ -1,12 +1,12 @@
 import asyncio
 import json
-from crawl4ai import JsonCssExtractionStrategy, AsyncWebCrawler, BrowserConfig, CrawlerRunConfig, CacheMode
+from crawl4ai import JsonCssExtractionStrategy, AsyncWebCrawler, CrawlerRunConfig
 
 async def main():
-    district_urls = []
+    districts = []
 
-    with open("ressources/district_urls.json", "r") as f:
-        district_urls = json.load(f)
+    with open("ressources/districts.json", "r") as f:
+        districts = json.load(f)
 
     schema = {
         "name": "Extract Tahsil data",
@@ -32,9 +32,9 @@ async def main():
 
     async with AsyncWebCrawler(verbose=True) as crawler:
         jsonRes = []
-        for url in district_urls:
+        for district in districts:
             result = await crawler.arun(
-                url=url,
+                url=district['url'],
                 config=run_conf
             )
             if not result.success:
@@ -42,6 +42,10 @@ async def main():
                 return
 
             data = json.loads(result.extracted_content)
+            # Add district_name to each tahsil item
+            for item in data:
+                item['district_name'] = district['district_name']
+                
             jsonRes.extend(data)
             await asyncio.sleep(30) 
 

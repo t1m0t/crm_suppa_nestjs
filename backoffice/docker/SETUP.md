@@ -70,7 +70,9 @@ pg_tileserv runs in its own service. It is not called directly by the client (if
 
 `pg_tileserv <= nestjsapp <= client`
 
-## Create a view for excluding points we don't need
+## Create views
+
+### Pind points
 
 ```sql
 CREATE OR REPLACE VIEW public.v_osm_points_pinds
@@ -85,4 +87,63 @@ WHERE
 ;
 
 GRANT SELECT ON public.v_osm_points_pinds TO postgres;
+```
+
+### Admin levels
+
+```sql
+CREATE OR REPLACE VIEW public.v_osm_polygons_admin_4
+as select osm_id, admin_level, name, way_area, way
+FROM public.planet_osm_polygon
+where
+	name is not null and
+	amenity is null and
+	power is null and
+	shop is null and
+	tourism is null and
+	water is null and
+	leisure is null and
+	boundary = 'administrative' and
+	admin_level = '4'
+;
+
+GRANT SELECT ON public.v_osm_polygons_admin_4 TO postgres;
+```
+
+```sql
+CREATE OR REPLACE VIEW public.v_osm_polygons_admin_5
+as select osm_id, admin_level, name, way_area, way
+FROM public.planet_osm_polygon
+where
+	name is not null and
+	amenity is null and
+	power is null and
+	shop is null and
+	tourism is null and
+	water is null and
+	leisure is null and
+	boundary = 'administrative' and
+	admin_level = '5'
+;
+
+GRANT SELECT ON public.v_osm_polygons_admin_5 TO postgres;
+```
+
+```sql
+CREATE OR REPLACE VIEW public.v_osm_polygons_admin_6
+as select osm_id, admin_level, name, way_area, way
+FROM public.planet_osm_polygon
+where
+	name is not null and
+	amenity is null and
+	power is null and
+	shop is null and
+	tourism is null and
+	water is null and
+	leisure is null and
+	boundary = 'administrative' and
+	admin_level = '6'
+;
+
+GRANT SELECT ON public.v_osm_polygons_admin_6 TO postgres;
 ```

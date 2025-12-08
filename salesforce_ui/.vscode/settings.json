@@ -1,12 +1,24 @@
 {
     "editor.formatOnPaste": true,
     "editor.formatOnSave": true,
+    "css.lint.unknownAtRules": "ignore",
     "diffEditor.wordWrap": "off",
     "editor.wordWrap": "on",
-    "files.associations": {
-        "*.css": "tailwindcss",
-    },
+    "editor.tabSize": 2,
+    "restoreTerminals.terminals": [
+        {
+            "splitTerminals": [
+                {
+                    "name": "client",
+                    "commands": [
+                        "cd ~/projet/suppavisor/main/crm_nestjs/salesforce_ui",
+                        "bun i && bun update && bun run dev"
+                    ]
+                }
+            ]
+        }
+    ],
     "[svelte]": {
-     "editor.defaultFormatter": "svelte.svelte-vscode"
-   },
+        "editor.defaultFormatter": "svelte.svelte-vscode",
+    }
 }

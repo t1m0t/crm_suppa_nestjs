@@ -3,32 +3,38 @@
 This file details the steps to install postGIS server to serve maps to a web client
 
 # Docker side
+
 1. Build the image
-From this folder: `docker build -t postgres-17-postgis .`
+   From this folder: `docker build -t postgres-17-postgis .`
 2. Deploy locally with docker compose
-From this folder: `docker compose -f docker-compose.yml up -d`
+   From this folder: `docker compose -f docker-compose.yml up -d`
 
 # Importing pbf map file
+
 1. Download the pbf file from [openstreetmap](https://download.geofabrik.de/asia/india.html)
 2. Install osm2pgsql so that we can import the pbf file
-`sudo apt update && sudo apt install osm2pgsql`
-3. Create the database 
-`psql -U postgres -h localhost`
-then in psql:
-`create database punjab_map;`
+   `sudo apt update && sudo apt install osm2pgsql`
+3. Create the database
+   `psql -U postgres -h localhost`
+   then in psql:
+   `create database punjab_map;`
 4. Activate the extensions for the database
-Still in psql, connect to the database with `\c punjab_map`
-Then:
+   Still in psql, connect to the database with `\c punjab_map`
+   Then:
+
 ```sql
 CREATE EXTENSION IF NOT EXISTS postgis;
 CREATE EXTENSION IF NOT EXISTS postgis_topology;
 CREATE EXTENSION IF NOT EXISTS hstore;
 ```
+
 5. Run this command to import
-`osm2pgsql -d <database> -U <user> -W -H localhost path/where/the/file/is/map.pbf`
+   `osm2pgsql -d <database> -U <user> -W -H localhost path/where/the/file/is/map.pbf`
 
 # Cache table setup
+
 Still in `punjab_map` with `\c punjab_map`
+
 ```sql
 -- Create cache table
 CREATE TABLE IF NOT EXISTS tile_cache (
@@ -59,23 +65,24 @@ $$ LANGUAGE plpgsql;
 ```
 
 # Use of pg_tileserv
+
 pg_tileserv runs in its own service. It is not called directly by the client (if not stated otherwise)
 
 `pg_tileserv <= nestjsapp <= client`
 
 ## Create a view for excluding points we don't need
-```sql
-CREATE OR REPLACE VIEW public.v_osm_points_named_notower AS
-SELECT
-  osm_id,
-  name,
-  place,
-  way
-FROM
-  public.planet_osm_point  -- change to planet_osm_points if that’s your table
-WHERE
-  name IS NOT NULL
-  AND power is null;
 
-GRANT SELECT ON public.v_osm_points_named_notower TO postgres;
+```sql
+CREATE OR REPLACE VIEW public.v_osm_points_pinds
+AS SELECT osm_id,
+    name,
+    way
+FROM planet_osm_point
+WHERE
+	name IS NOT NULL AND
+	power is null AND
+	amenity is null
+;
+
+GRANT SELECT ON public.v_osm_points_pinds TO postgres;
 ```

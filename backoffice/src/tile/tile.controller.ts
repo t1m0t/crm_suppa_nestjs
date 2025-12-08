@@ -1,18 +1,12 @@
-import {
-  Controller,
-  Get,
-  Param,
-  Res,
-  HttpStatus,
-} from '@nestjs/common';
+import { Controller, Get, Param, Res, HttpStatus } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
-import type { Response } from 'express';
+import type { FastifyReply } from 'fastify';
 import { firstValueFrom } from 'rxjs';
 
 const PG_TILE_SERV_BASE = process.env.TILE_SERVER_BASE_URL;
 
 @Controller('tiles')
-export class TilesController {
+export class TileController {
   constructor(private readonly http: HttpService) {}
 
   // 🔹 Proxy the PBF tiles: /tiles/:layer/:z/:x/:y.pbf
@@ -22,7 +16,7 @@ export class TilesController {
     @Param('z') z: string,
     @Param('x') x: string,
     @Param('y') y: string,
-    @Res() res: Response,
+    @Res() res: FastifyReply,
   ) {
     const url = `${PG_TILE_SERV_BASE}/${layer}/${z}/${x}/${y}.pbf`;
 
@@ -30,7 +24,7 @@ export class TilesController {
       const upstream = await firstValueFrom(
         this.http.get(url, {
           responseType: 'arraybuffer', // important: binary
-          validateStatus: () => true,  // pass-through status
+          validateStatus: () => true, // pass-through status
         }),
       );
 
@@ -41,23 +35,23 @@ export class TilesController {
       const ct =
         upstream.headers['content-type'] ||
         'application/vnd.mapbox-vector-tile';
-      res.setHeader('Content-Type', ct);
+      res.header('Content-Type', ct);
 
       const ce = upstream.headers['content-encoding'];
       if (ce) {
-        res.setHeader('Content-Encoding', ce);
+        res.header('Content-Encoding', ce);
       }
 
       // Copy cache headers too if you want
       const cacheControl = upstream.headers['cache-control'];
       if (cacheControl) {
-        res.setHeader('Cache-Control', cacheControl);
+        res.header('Cache-Control', cacheControl);
       }
 
       return res.send(Buffer.from(upstream.data));
     } catch (e) {
       console.error('Tile proxy error:', e);
-      return res.status(502).send('Bad gateway (pg_tileserv unreachable)');
+      return res.status(502).send('Bad gateway (tile server unreachable)');
     }
   }
 
@@ -66,7 +60,7 @@ export class TilesController {
   @Get(':layer.json')
   async getLayerMetadata(
     @Param('layer') layer: string,
-    @Res() res: Response,
+    @Res() res: FastifyReply,
   ) {
     const url = `${PG_TILE_SERV_BASE}/${layer}.json`;
 
@@ -78,7 +72,10 @@ export class TilesController {
       );
 
       res.status(upstream.status || HttpStatus.OK);
-      res.setHeader('Content-Type', upstream.headers['content-type'] || 'application/json');
+      res.header(
+        'Content-Type',
+        upstream.headers['content-type'] || 'application/json',
+      );
 
       return res.send(upstream.data);
     } catch (e) {

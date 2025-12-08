@@ -7,7 +7,8 @@ import { AppModule } from './app.module';
 import * as dotenv from 'dotenv';
 import { ConsoleLogger } from '@nestjs/common';
 
-dotenv.config({ path: process.cwd() + `/.env.${process.env.NODE_ENV}` });
+if (process.env.NODE_ENV)
+  dotenv.config({ path: process.cwd() + `/.env.${process.env.NODE_ENV}` });
 async function bootstrap() {
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
@@ -18,6 +19,11 @@ async function bootstrap() {
       }),
     },
   );
+  if (process.env.NODE_ENV === 'development')
+    app.enableCors({
+      origin: 'http://localhost:5173', // port of your SvelteKit dev server
+      credentials: true,
+    });
   await app.listen(process.env.PORT ?? 3000);
 }
 bootstrap();

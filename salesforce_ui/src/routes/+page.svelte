@@ -25,7 +25,7 @@
 					},
 				],
 			},
-			center: [75.5717, 31.6881], // example: Bangalore
+			center: [75.5717, 31.6881],
 			zoom: 10,
 		})
 		map.addControl(new maplibregl.NavigationControl(), 'top-right')
@@ -33,7 +33,7 @@
 			map.addSource('my_pgtileserv_source', {
 				type: 'vector',
 				tiles: [
-					'http://localhost:7800/public.v_osm_points_named_notower/{z}/{x}/{y}.pbf',
+					'http://localhost:3030/tiles/public.v_osm_points_pinds/{z}/{x}/{y}.pbf',
 				],
 				minzoom: 0,
 				maxzoom: 22,
@@ -42,11 +42,12 @@
 				id: 'my_pgtileserv_layer',
 				type: 'circle',
 				source: 'my_pgtileserv_source',
-				'source-layer': 'public.v_osm_points_named_notower',
-				// paint: {
-				// 	'circle-color': 'blue',
-				// 	'circle-radius': 3,
-				// },
+				'source-layer': 'public.v_osm_points_pinds',
+				paint: {
+					'circle-color': 'blue',
+					'circle-radius': 3,
+					'circle-opacity': 0.5,
+				},
 			})
 		})
 	})

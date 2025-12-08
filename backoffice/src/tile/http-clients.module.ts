@@ -13,9 +13,9 @@ export const TILE_SERVER = Symbol('TILE_SERVER');
           baseURL: process.env.TILE_SERVER_BASE_URL ?? 'http://localhost:7800',
           timeout: 8000,
           headers: {
-            Accept: 'application/vnd.mapbox-vector-tile',
             'Content-Type': 'application/vnd.mapbox-vector-tile',
-            // 'Content-Encoding': 'gzip',
+            // 'Content-Type': 'application/x-protobuf',
+            'Content-Encoding': 'gzip',
           },
         });
         return new HttpService(instance);

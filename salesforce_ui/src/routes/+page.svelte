@@ -30,21 +30,23 @@
 		})
 		map.addControl(new maplibregl.NavigationControl(), 'top-right')
 		map.on('load', () => {
-			map.addSource('my-vector-source', {
+			map.addSource('my_pgtileserv_source', {
 				type: 'vector',
-				tiles: ['http://localhost:3030/tiles/{z}/{x}/{y}.pbf'],
+				tiles: [
+					'http://localhost:7800/public.v_osm_points_named_notower/{z}/{x}/{y}.pbf',
+				],
 				minzoom: 0,
-				maxzoom: 14,
+				maxzoom: 22,
 			})
 			map.addLayer({
-				id: 'my-vector-layer-fill',
-				type: 'fill', // 'line', 'circle', 'symbol', etc. also possible
-				source: 'my-vector-source',
-				'source-layer': 'v_osm_points_named_notower',
-				paint: {
-					'fill-color': '#0080ff',
-					'fill-opacity': 0.4,
-				},
+				id: 'my_pgtileserv_layer',
+				type: 'circle',
+				source: 'my_pgtileserv_source',
+				'source-layer': 'public.v_osm_points_named_notower',
+				// paint: {
+				// 	'circle-color': 'blue',
+				// 	'circle-radius': 3,
+				// },
 			})
 		})
 	})
@@ -53,6 +55,6 @@
 <main>
 	<div
 		id="map"
-		style="position: absolute; top: 0; bottom: 0; width: 100%; height: 100%;"
+		style="position: absolute; top: 0; bottom: 0; width: 100%; height: 70%;"
 	></div>
 </main>

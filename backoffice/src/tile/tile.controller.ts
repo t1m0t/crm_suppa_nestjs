@@ -2,116 +2,88 @@ import {
   Controller,
   Get,
   Param,
-  Header,
   Res,
-  Delete,
-  HttpException,
   HttpStatus,
-  Query,
 } from '@nestjs/common';
+import { HttpService } from '@nestjs/axios';
 import type { Response } from 'express';
-import { TileService } from './tile.service';
-import { PostgresCacheService } from './postgres-cache.service';
+import { firstValueFrom } from 'rxjs';
+
+const PG_TILE_SERV_BASE = process.env.TILE_SERVER_BASE_URL;
 
 @Controller('tiles')
-export class TileController {
-  constructor(
-    private readonly tileService: TileService,
-    private readonly cacheService: PostgresCacheService,
-  ) {}
+export class TilesController {
+  constructor(private readonly http: HttpService) {}
 
-  @Get(':z/:x/:y')
-  // @Header('Content-Encoding', 'gzip')
-  @Header('Access-Control-Allow-Origin', '*')
-  @Header('Cache-Control', 'public, max-age=3600')
-  @Header('Content-Type', 'application/x-protobuf')
+  // 🔹 Proxy the PBF tiles: /tiles/:layer/:z/:x/:y.pbf
+  @Get(':layer/:z/:x/:y.pbf')
   async getTile(
+    @Param('layer') layer: string,
     @Param('z') z: string,
     @Param('x') x: string,
     @Param('y') y: string,
     @Res() res: Response,
   ) {
-    const zNum = parseInt(z);
-    const xNum = parseInt(x);
-    const yNum = parseInt(y);
+    const url = `${PG_TILE_SERV_BASE}/${layer}/${z}/${x}/${y}.pbf`;
 
     try {
-      this.tileService.logger.debug(`Serving tile ${zNum}/${xNum}/${yNum}`);
-      const tile = await this.tileService.getTile(zNum, xNum, yNum);
-      res.send(tile);
-    } catch (error) {
-      this.tileService.logger.error(
-        `Error serving tile ${zNum}/${xNum}/${yNum}:`,
-        error,
+      const upstream = await firstValueFrom(
+        this.http.get(url, {
+          responseType: 'arraybuffer', // important: binary
+          validateStatus: () => true,  // pass-through status
+        }),
       );
-      throw new HttpException(
-        'Error serving tile',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
+
+      // Pass status code
+      res.status(upstream.status || HttpStatus.OK);
+
+      // Pass through content-type & encoding if present
+      const ct =
+        upstream.headers['content-type'] ||
+        'application/vnd.mapbox-vector-tile';
+      res.setHeader('Content-Type', ct);
+
+      const ce = upstream.headers['content-encoding'];
+      if (ce) {
+        res.setHeader('Content-Encoding', ce);
+      }
+
+      // Copy cache headers too if you want
+      const cacheControl = upstream.headers['cache-control'];
+      if (cacheControl) {
+        res.setHeader('Cache-Control', cacheControl);
+      }
+
+      return res.send(Buffer.from(upstream.data));
+    } catch (e) {
+      console.error('Tile proxy error:', e);
+      return res.status(502).send('Bad gateway (pg_tileserv unreachable)');
     }
   }
 
-  // Cache management endpoints
-
-  @Delete('cache/:z/:x/:y')
-  async clearSpecificTile(
-    @Param('z') z: string,
-    @Param('x') x: string,
-    @Param('y') y: string,
+  // 🔹 Proxy the layer JSON metadata (your custom JSON)
+  // GET /tiles/:layer.json  ->  http://localhost:7800/:layer.json
+  @Get(':layer.json')
+  async getLayerMetadata(
+    @Param('layer') layer: string,
+    @Res() res: Response,
   ) {
-    await this.tileService.clearTileCache(
-      parseInt(z),
-      parseInt(x),
-      parseInt(y),
-    );
-    return { message: `Cache cleared for tile ${z}/${x}/${y}` };
-  }
+    const url = `${PG_TILE_SERV_BASE}/${layer}.json`;
 
-  @Delete('cache/zoom/:z')
-  async clearZoomLevel(@Param('z') z: string) {
-    const count = await this.tileService.clearZoomCache(parseInt(z));
-    return { message: `Cleared ${count} tiles at zoom level ${z}` };
-  }
+    try {
+      const upstream = await firstValueFrom(
+        this.http.get(url, {
+          validateStatus: () => true,
+        }),
+      );
 
-  @Delete('cache')
-  async clearAllCache() {
-    await this.tileService.clearAllCache();
-    return { message: 'All cache cleared' };
-  }
+      res.status(upstream.status || HttpStatus.OK);
+      res.setHeader('Content-Type', upstream.headers['content-type'] || 'application/json');
 
-  @Get('cache/stats')
-  async getCacheStats() {
-    return await this.tileService.getCacheStats();
-  }
-
-  @Get('cache/popular')
-  async getPopularTiles() {
-    return await this.tileService.getPopularTiles(20);
-  }
-
-  @Get('cache/cleanup')
-  async cleanupExpired() {
-    const count = await this.cacheService.cleanupExpired();
-    return { message: `Cleaned up ${count} expired cache entries` };
-  }
-
-  // TileJSON endpoint
-  @Get('tiles.json')
-  @Header('Content-Type', 'application/json')
-  getTileJson() {
-    return {
-      tilejson: '3.0.0',
-      name: 'Cached OSM Tiles',
-      description:
-        'Self-hosted OpenStreetMap vector tiles with PostgreSQL caching',
-      version: '1.0.0',
-      attribution: '© OpenStreetMap contributors',
-      scheme: 'xyz',
-      tiles: ['http://localhost:3000/tiles/{z}/{x}/{y}.mvt'],
-      minzoom: 0,
-      maxzoom: 18,
-      bounds: [-180, -85.0511, 180, 85.0511],
-      center: [0, 0, 2],
-    };
+      return res.send(upstream.data);
+    } catch (e) {
+      console.error('Metadata proxy error:', e);
+      return res.status(502).send('Bad gateway (pg_tileserv unreachable)');
+    }
   }
 }

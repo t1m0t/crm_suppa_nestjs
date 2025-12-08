@@ -16,7 +16,7 @@ export class TileService {
 
   constructor(
     private cacheService: PostgresCacheService,
-    @Inject(TILE_SERVER) private readonly tileServer: HttpService,
+    private readonly http: HttpService,
   ) {}
 
   // Convert tile coordinates to bounding box
@@ -57,9 +57,9 @@ export class TileService {
     return result[0]?.geojson || { type: 'FeatureCollection', features: [] };
   }
 
-  async getTile(z: number, x: number, y: number): Promise<Buffer> {
+  async getTile(layer:string, z: number, x: number, y: number): Promise<Buffer> {
     try {
-      const cacheKey = `tile:${z}:${x}:${y}`;
+      const cacheKey = `tile:${layer}:${z}:${x}:${y}`;
       if (process.env.CACHE_TILE_ENABLED === 'true') {
         // Try cache first
         const cached = await this.cacheService.get<Buffer>(cacheKey);
@@ -67,12 +67,15 @@ export class TileService {
           return cached;
         }
       }
+      
+      const url = `${process.env.TILE_SERVER_BASE_URL}/${layer}/${z}/${x}/${y}.pbf`;
 
       // Generate tile
       const response = await firstValueFrom(
-        this.tileServer.get<Buffer>(
-          `public.v_osm_points_named_notower/${z}/${x}/${y}.pbf`,
-        ),
+         this.http.get(url, {
+          responseType: 'arraybuffer', // important: binary
+          validateStatus: () => true,  // pass-through status
+        }),
       );
       const gzipedTile: Buffer = response.data;
       if (gzipedTile.length) {

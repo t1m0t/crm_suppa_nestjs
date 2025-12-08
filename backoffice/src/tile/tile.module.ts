@@ -3,12 +3,13 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { TileController } from './tile.controller';
 import { TileService } from './tile.service';
 import { PostgresCacheService } from './postgres-cache.service';
-import { HttpClientsModule } from 'src/tile/http-clients.module';
+// import { HttpClientsModule } from 'src/tile/http-clients.module';
+import { HttpModule } from '@nestjs/axios';
 
 @Module({
   imports: [
     ScheduleModule.forRoot(), // For cron jobs
-    HttpClientsModule
+    HttpModule
   ],
   controllers: [TileController],
   providers: [TileService, PostgresCacheService],

@@ -8,12 +8,15 @@ async def main():
     if not BASE_URL:
         raise ValueError("SCRAPPING_BASE_URL environment variable is not set.")
 
-    tahsil_urls = []
+    tahsils = []
 
     with open("ressources/tahsil.json", "r") as f:
         jsonRes = json.load(f)
         for item in jsonRes:
-            tahsil_urls.append(BASE_URL + item["tahsil_url"])
+            tahsils.append({
+                "url":  BASE_URL + item["tahsil_url"],
+                "tahsil_name": item["tahsil_name"],
+            })
 
     schema = {
         "name": "Extract Village data",
@@ -45,9 +48,9 @@ async def main():
 
     async with AsyncWebCrawler(verbose=True) as crawler:
         jsonRes = []
-        for url in tahsil_urls:
+        for tahsil in tahsils:
             result = await crawler.arun(
-                url=url,
+                url=tahsil["url"],
                 config=run_conf
             )
             if not result.success:
@@ -55,10 +58,14 @@ async def main():
                 return
 
             data = json.loads(result.extracted_content)
-            print(f"Extracted {len(data)} villages from {url}")
+            # Add tahsil to each village item
+            for item in data:
+                item['tahsil_name'] = tahsil['tahsil_name']
+                
+            print(f"Extracted {len(data)} villages from {tahsil['url']}")
             print(json.dumps(data, indent=2))
             jsonRes.extend(data)
-            await asyncio.sleep(30)  # Be polite and avoid overwhelming the server
+            await asyncio.sleep(30)
 
         if jsonRes:
             with open("ressources/villages.json", "a") as f:

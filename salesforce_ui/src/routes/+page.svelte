@@ -4,6 +4,8 @@
 	import 'maplibre-gl/dist/maplibre-gl.css'
 	import { dev } from '$app/environment'
 
+	let mapPopup: maplibregl.Popup | null = $state(null)
+
 	onMount(() => {
 		const map = new maplibregl.Map({
 			container: 'map',
@@ -110,7 +112,10 @@
 				</div>
   			`
 
-				new maplibregl.Popup().setLngLat(coordinates).setHTML(html).addTo(map)
+				mapPopup = new maplibregl.Popup()
+					.setLngLat(coordinates)
+					.setHTML(html)
+					.addTo(map)
 			})
 
 			map.on('click', 'admin_5_layer', (e) => {
@@ -141,9 +146,19 @@
 				</div>
   			`
 
-				new maplibregl.Popup().setLngLat(e.lngLat).setHTML(html).addTo(map)
+				mapPopup = new maplibregl.Popup()
+					.setLngLat(e.lngLat)
+					.setHTML(html)
+					.addTo(map)
 			})
 		})
+	})
+
+	window.addEventListener('keydown', (e) => {
+		if (e.key === 'Escape' && mapPopup) {
+			mapPopup.remove()
+			mapPopup = null
+		}
 	})
 </script>
 

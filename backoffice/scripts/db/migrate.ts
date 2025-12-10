@@ -1,5 +1,4 @@
 import { sql, SQL } from "bun"
-// scripts/migrate.ts
 import {
   listMigrationFiles,
   getMigrationPath,
@@ -8,8 +7,8 @@ import {
 
 
 class DbMigration {
-  private const sqlMapDataAdmin: SQL.Query<SQL.PostgresOrMySQLOptions> | null = null
-  private const sqlBackofficeAdmin: SQL.Query<SQL.PostgresOrMySQLOptions> | null = null
+  private sqlMapDataAdmin: SQL.Query<SQL.PostgresOrMySQLOptions> | null = null;
+  private sqlBackofficeAdmin: SQL.Query<SQL.PostgresOrMySQLOptions> | null = null;
 
   constructor() {
     this.sqlMapDataAdmin = new SQL({
@@ -48,85 +47,85 @@ class DbMigration {
     this.ensureDatabaseSetup()
   }
 
-  private function ensureDatabaseSetup() {
+  private ensureDatabaseSetup() {
     this.setupDbBackofficeApp()
     this.setupDbMapData()
   }
 
-  private function setupDbBackofficeApp() {
+  private setupDbBackofficeApp() {
     this.sqlBackofficeAdmin = await sql`
-  ------------------------------------------------------------
-  -- 1. CREATE ADMIN USER IF NOT EXISTS
-  ------------------------------------------------------------
-  DO $$
-  BEGIN
-      IF NOT EXISTS (
-          SELECT FROM pg_catalog.pg_roles WHERE rolename = '${process.env.DB_BACKOFFICE_APP_ADMIN_NAME}'
-      ) THEN
-          CREATE ROLE ${process.env.DB_BACKOFFICE_APP_ADMIN_NAME} LOGIN PASSWORD '${process.env.DB_BACKOFFICE_APP_ADMIN_PASSWORD}';
-      END IF;
-  END
-  $$;
+    ------------------------------------------------------------
+    -- 1. CREATE ADMIN USER IF NOT EXISTS
+    ------------------------------------------------------------
+    DO $$
+    BEGIN
+        IF NOT EXISTS (
+            SELECT FROM pg_catalog.pg_roles WHERE rolename = '${process.env.DB_BACKOFFICE_APP_ADMIN_NAME}'
+        ) THEN
+            CREATE ROLE ${process.env.DB_BACKOFFICE_APP_ADMIN_NAME} LOGIN PASSWORD '${process.env.DB_BACKOFFICE_APP_ADMIN_PASSWORD}';
+        END IF;
+    END
+    $$;
 
-  ------------------------------------------------------------
-  -- 2. CREATE APP USER IF NOT EXISTS
-  ------------------------------------------------------------
-  DO $$
-  BEGIN
-      IF NOT EXISTS (
-          SELECT FROM pg_catalog.pg_roles WHERE rolname = '${process.env.DB_BACKOFFICE_APP_USER_NAME}'
-      ) THEN
-          CREATE ROLE ${process.env.DB_BACKOFFICE_APP_USER_NAME} LOGIN PASSWORD '${process.env.DB_BACKOFFICE_APP_USER_PASSWORD}';
-      END IF;
-  END
-  $$;
+    ------------------------------------------------------------
+    -- 2. CREATE APP USER IF NOT EXISTS
+    ------------------------------------------------------------
+    DO $$
+    BEGIN
+        IF NOT EXISTS (
+            SELECT FROM pg_catalog.pg_roles WHERE rolname = '${process.env.DB_BACKOFFICE_APP_USER_NAME}'
+        ) THEN
+            CREATE ROLE ${process.env.DB_BACKOFFICE_APP_USER_NAME} LOGIN PASSWORD '${process.env.DB_BACKOFFICE_APP_USER_PASSWORD}';
+        END IF;
+    END
+    $$;
 
-  ------------------------------------------------------------
-  -- 3. CREATE SCHEMA IF NOT EXISTS (owned by admin)
-  ------------------------------------------------------------
-  DO $$
-  BEGIN
-      IF NOT EXISTS (
-          SELECT FROM information_schema.schemata WHERE schema_name = '${process.env.DB_BACKOFFICE_APP_SCHEMA_NAME}'
-      ) THEN
-          EXECUTE 'CREATE SCHEMA ${process.env.DB_BACKOFFICE_APP_SCHEMA_NAME} AUTHORIZATION ${process.env.DB_BACKOFFICE_APP_ADMIN_NAME}';
-      END IF;
-  END
-  $$;
+    ------------------------------------------------------------
+    -- 3. CREATE SCHEMA IF NOT EXISTS (owned by admin)
+    ------------------------------------------------------------
+    DO $$
+    BEGIN
+        IF NOT EXISTS (
+            SELECT FROM information_schema.schemata WHERE schema_name = '${process.env.DB_BACKOFFICE_APP_SCHEMA_NAME}'
+        ) THEN
+            EXECUTE 'CREATE SCHEMA ${process.env.DB_BACKOFFICE_APP_SCHEMA_NAME} AUTHORIZATION ${process.env.DB_BACKOFFICE_APP_ADMIN_NAME}';
+        END IF;
+    END
+    $$;
 
-  REVOKE ALL ON SCHEMA my_app FROM PUBLIC;
+    REVOKE ALL ON SCHEMA my_app FROM PUBLIC;
 
-  ------------------------------------------------------------
-  -- 4. ADMIN PRIVILEGES
-  ------------------------------------------------------------
-  GRANT USAGE, CREATE ON SCHEMA my_app TO my_app_admin;
-  GRANT ALL PRIVILEGES ON ALL TABLES     IN SCHEMA my_app TO my_app_admin;
-  GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA my_app TO my_app_admin;
-  GRANT ALL PRIVILEGES ON ALL FUNCTIONS IN SCHEMA my_app TO my_app_admin;
+    ------------------------------------------------------------
+    -- 4. ADMIN PRIVILEGES
+    ------------------------------------------------------------
+    GRANT USAGE, CREATE ON SCHEMA my_app TO my_app_admin;
+    GRANT ALL PRIVILEGES ON ALL TABLES     IN SCHEMA my_app TO my_app_admin;
+    GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA my_app TO my_app_admin;
+    GRANT ALL PRIVILEGES ON ALL FUNCTIONS IN SCHEMA my_app TO my_app_admin;
 
-  ALTER DEFAULT PRIVILEGES FOR USER my_app_admin IN SCHEMA my_app
-  GRANT ALL PRIVILEGES ON TABLES TO my_app_admin;
+    ALTER DEFAULT PRIVILEGES FOR USER my_app_admin IN SCHEMA my_app
+    GRANT ALL PRIVILEGES ON TABLES TO my_app_admin;
 
-  ALTER DEFAULT PRIVILEGES FOR USER my_app_admin IN SCHEMA my_app
-  GRANT ALL PRIVILEGES ON SEQUENCES TO my_app_admin;
+    ALTER DEFAULT PRIVILEGES FOR USER my_app_admin IN SCHEMA my_app
+    GRANT ALL PRIVILEGES ON SEQUENCES TO my_app_admin;
 
-  ALTER DEFAULT PRIVILEGES FOR USER my_app_admin IN SCHEMA my_app
-  GRANT ALL PRIVILEGES ON FUNCTIONS TO my_app_admin;
+    ALTER DEFAULT PRIVILEGES FOR USER my_app_admin IN SCHEMA my_app
+    GRANT ALL PRIVILEGES ON FUNCTIONS TO my_app_admin;
 
-  ------------------------------------------------------------
-  -- 5. APP USER PRIVILEGES (SELECT + UPDATE ONLY)
-  ------------------------------------------------------------
-  GRANT USAGE ON SCHEMA my_app TO my_app_user;
+    ------------------------------------------------------------
+    -- 5. APP USER PRIVILEGES (SELECT + UPDATE ONLY)
+    ------------------------------------------------------------
+    GRANT USAGE ON SCHEMA my_app TO my_app_user;
 
-  GRANT SELECT, UPDATE ON ALL TABLES     IN SCHEMA my_app TO my_app_user;
-  GRANT SELECT        ON ALL SEQUENCES IN SCHEMA my_app TO my_app_user;
+    GRANT SELECT, UPDATE ON ALL TABLES     IN SCHEMA my_app TO my_app_user;
+    GRANT SELECT        ON ALL SEQUENCES IN SCHEMA my_app TO my_app_user;
 
-  ALTER DEFAULT PRIVILEGES FOR USER my_app_admin IN SCHEMA my_app
-  GRANT SELECT, UPDATE ON TABLES TO my_app_user;
+    ALTER DEFAULT PRIVILEGES FOR USER my_app_admin IN SCHEMA my_app
+    GRANT SELECT, UPDATE ON TABLES TO my_app_user;
 
-  ALTER DEFAULT PRIVILEGES FOR USER my_app_admin IN SCHEMA my_app
-  GRANT SELECT ON SEQUENCES TO my_app_user;
-  `
+    ALTER DEFAULT PRIVILEGES FOR USER my_app_admin IN SCHEMA my_app
+    GRANT SELECT ON SEQUENCES TO my_app_user;
+    `
 
   }
 }

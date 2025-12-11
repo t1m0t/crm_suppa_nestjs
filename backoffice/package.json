@@ -17,7 +17,9 @@
     "test:watch": "bun test --watch",
     "test:cov": "bun test --coverage",
     "test:debug": "bun --inspect-brk --runInBand",
-    "test:e2e": "bun test ./test/app.e2e-spec.ts"
+    "test:e2e": "bun test ./test/app.e2e-spec.ts",
+    "db:migrate": "bun run scripts/migrate.ts",
+    "db:rollback": "bun run scripts/migrate.ts rollback"
   },
   "dependencies": {
     "@keyv/postgres": "^2.2.2",

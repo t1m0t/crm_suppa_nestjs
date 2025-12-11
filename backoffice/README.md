@@ -1,98 +1,138 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# DB Setup
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+- for MAP DATA
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+```sql
+-- create admin user
+DO $$
+  BEGIN
+    IF NOT EXISTS (
+        SELECT FROM pg_catalog.pg_roles WHERE rolname = 'map_data_admin';
+    ) THEN
+        CREATE ROLE map_data_admin LOGIN PASSWORD 'map_data_admin_password';
+    END IF;
+  END
+$$;
 
-## Description
+-- create app user
+DO $$
+  BEGIN
+    IF NOT EXISTS (
+        SELECT FROM pg_catalog.pg_roles WHERE rolname = 'map_data_user';
+    ) THEN
+        CREATE ROLE map_data_user LOGIN PASSWORD 'map_data_user_password';
+    END IF;
+  END
+$$;
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+-- create schema
+DO $$
+  BEGIN
+    IF NOT EXISTS (
+      SELECT FROM information_schema.schemata WHERE schema_name = 'map_data'
+    ) THEN
+      EXECUTE 'CREATE SCHEMA map_data AUTHORIZATION map_data_admin';
+  END IF;
+END
+$$;
 
-## Project setup
+REVOKE ALL ON SCHEMA map_data FROM PUBLIC;
 
-```bash
-$ npm install
+-- permissions admin
+GRANT USAGE, CREATE ON SCHEMA map_data TO map_data_admin;
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA map_data TO map_data_admin;
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA map_data TO map_data_admin;
+GRANT ALL PRIVILEGES ON ALL FUNCTIONS IN SCHEMA map_data TO map_data_admin;
+
+ALTER DEFAULT PRIVILEGES FOR USER map_data_admin IN SCHEMA map_data
+GRANT ALL PRIVILEGES ON TABLES TO map_data_admin;
+
+ALTER DEFAULT PRIVILEGES FOR USER map_data_admin IN SCHEMA map_data
+GRANT ALL PRIVILEGES ON SEQUENCES TO map_data_admin;
+
+ALTER DEFAULT PRIVILEGES FOR USER map_data_admin IN SCHEMA map_data
+GRANT ALL PRIVILEGES ON FUNCTIONS TO map_data_admin;
+
+-- permissions app user
+GRANT USAGE ON SCHEMA map_data TO map_data_user;
+
+GRANT SELECT, UPDATE ON ALL TABLES IN SCHEMA map_data TO map_data_user;
+GRANT SELECT ON ALL SEQUENCES IN SCHEMA map_data TO map_data_user;
+
+ALTER DEFAULT PRIVILEGES FOR USER map_data_admin IN SCHEMA map_data
+GRANT SELECT, UPDATE ON TABLES TO map_data_user;
+
+ALTER DEFAULT PRIVILEGES FOR USER map_data_admin IN SCHEMA map_data
+GRANT SELECT ON SEQUENCES TO map_data_user;
+
 ```
 
-## Compile and run the project
+- for BACKOFFICE_APP
 
-```bash
-# development
-$ npm run start
+```sql
+-- create admin user
+DO $$
+  BEGIN
+    IF NOT EXISTS (
+        SELECT FROM pg_catalog.pg_roles WHERE rolname = 'backoffice_app_admin';
+    ) THEN
+        CREATE ROLE backoffice_app_admin LOGIN PASSWORD 'backoffice_app_admin_password';
+    END IF;
+  END
+$$;
 
-# watch mode
-$ npm run start:dev
+-- create app user
+DO $$
+  BEGIN
+    IF NOT EXISTS (
+        SELECT FROM pg_catalog.pg_roles WHERE rolname = 'backoffice_app_user';
+    ) THEN
+        CREATE ROLE backoffice_app_user LOGIN PASSWORD 'backoffice_app_user_password';
+    END IF;
+  END
+$$;
 
-# production mode
-$ npm run start:prod
+-- create schema
+DO $$
+  BEGIN
+    IF NOT EXISTS (
+      SELECT FROM information_schema.schemata WHERE schema_name = 'backoffice_app'
+    ) THEN
+      EXECUTE 'CREATE SCHEMA backoffice_app AUTHORIZATION backoffice_app_admin';
+  END IF;
+END
+$$;
+
+REVOKE ALL ON SCHEMA backoffice_app FROM PUBLIC;
+
+-- permissions admin
+GRANT USAGE, CREATE ON SCHEMA backoffice_app TO backoffice_app_admin;
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA backoffice_app TO backoffice_app_admin;
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA backoffice_app TO backoffice_app_admin;
+GRANT ALL PRIVILEGES ON ALL FUNCTIONS IN SCHEMA backoffice_app TO backoffice_app_admin;
+
+ALTER DEFAULT PRIVILEGES FOR USER backoffice_app_admin IN SCHEMA backoffice_app
+GRANT ALL PRIVILEGES ON TABLES TO backoffice_app_admin;
+
+ALTER DEFAULT PRIVILEGES FOR USER backoffice_app_admin IN SCHEMA backoffice_app
+GRANT ALL PRIVILEGES ON SEQUENCES TO backoffice_app_admin;
+
+ALTER DEFAULT PRIVILEGES FOR USER backoffice_app_admin IN SCHEMA backoffice_app
+GRANT ALL PRIVILEGES ON FUNCTIONS TO backoffice_app_admin;
+
+-- permissions app user
+GRANT USAGE ON SCHEMA backoffice_app TO backoffice_app_user;
+
+GRANT SELECT, UPDATE ON ALL TABLES IN SCHEMA backoffice_app TO backoffice_app_user;
+GRANT SELECT ON ALL SEQUENCES IN SCHEMA backoffice_app TO backoffice_app_user;
+
+ALTER DEFAULT PRIVILEGES FOR USER backoffice_app_admin IN SCHEMA backoffice_app
+GRANT SELECT, UPDATE ON TABLES TO backoffice_app_user;
+
+ALTER DEFAULT PRIVILEGES FOR USER backoffice_app_admin IN SCHEMA backoffice_app
+GRANT SELECT ON SEQUENCES TO backoffice_app_user;
 ```
 
-## Run tests
-
-```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
 ```
 
-## Deployment
-
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
-
-```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
 ```
-
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
-
-## Resources
-
-Check out a few resources that may come in handy when working with NestJS:
-
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).

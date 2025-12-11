@@ -1,6 +1,7 @@
 // scripts/migration-utils.ts
-import { readdirSync, readFileSync } from "fs";
-import path from "path";
+import { sql } from 'bun';
+import { readdirSync, readFileSync } from 'fs';
+import path from 'path';
 
 export type ParsedMigration = {
   name: string;
@@ -9,8 +10,11 @@ export type ParsedMigration = {
 };
 
 // Parse a migration file into { up, down }
-export function parseMigrationFile(filePath: string, name: string): ParsedMigration {
-  const content = readFileSync(filePath, "utf8");
+export function parseMigrationFile(
+  filePath: string,
+  name: string,
+): ParsedMigration {
+  const content = readFileSync(filePath, 'utf8');
 
   const upMarker = /^--\s*migrate:up\s*$/im;
   const downMarker = /^--\s*migrate:down\s*$/im;
@@ -43,13 +47,25 @@ export function parseMigrationFile(filePath: string, name: string): ParsedMigrat
 }
 
 // List migration files sorted (001_..., 002_... or timestamp-based)
-export function listMigrationFiles(dir = "./migrations"): string[] {
+export function listMigrationFiles(dir = './migrations'): string[] {
   return readdirSync(dir)
-    .filter((f) => f.endsWith(".sql"))
+    .filter((f) => f.endsWith('.sql'))
     .sort(); // lexicographic sort works with 001_ / 20250101_...
 }
 
-export function getMigrationPath(fileName: string, dir = "./migrations"): string {
+export function getMigrationPath(
+  fileName: string,
+  dir = './migrations',
+): string {
   return path.join(dir, fileName);
 }
 
+export async function getLastMigration(): Promise<string | null> {
+  const rows = await sql<{ name: string }[]>`
+    SELECT name
+    FROM migrations
+    ORDER BY run_on DESC, id DESC
+    LIMIT 1
+  `;
+  return rows.length ? rows[0].name : null;
+}

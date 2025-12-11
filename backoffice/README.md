@@ -7,7 +7,7 @@
 DO $$
   BEGIN
     IF NOT EXISTS (
-        SELECT FROM pg_catalog.pg_roles WHERE rolname = 'map_data_admin';
+        SELECT FROM pg_catalog.pg_roles WHERE rolname = 'map_data_admin'
     ) THEN
         CREATE ROLE map_data_admin LOGIN PASSWORD 'map_data_admin_password';
     END IF;
@@ -18,7 +18,7 @@ $$;
 DO $$
   BEGIN
     IF NOT EXISTS (
-        SELECT FROM pg_catalog.pg_roles WHERE rolname = 'map_data_user';
+        SELECT FROM pg_catalog.pg_roles WHERE rolname = 'map_data_user'
     ) THEN
         CREATE ROLE map_data_user LOGIN PASSWORD 'map_data_user_password';
     END IF;
@@ -74,7 +74,7 @@ GRANT SELECT ON SEQUENCES TO map_data_user;
 DO $$
   BEGIN
     IF NOT EXISTS (
-        SELECT FROM pg_catalog.pg_roles WHERE rolname = 'backoffice_app_admin';
+        SELECT FROM pg_catalog.pg_roles WHERE rolname = 'backoffice_app_admin'
     ) THEN
         CREATE ROLE backoffice_app_admin LOGIN PASSWORD 'backoffice_app_admin_password';
     END IF;
@@ -85,7 +85,7 @@ $$;
 DO $$
   BEGIN
     IF NOT EXISTS (
-        SELECT FROM pg_catalog.pg_roles WHERE rolname = 'backoffice_app_user';
+        SELECT FROM pg_catalog.pg_roles WHERE rolname = 'backoffice_app_user'
     ) THEN
         CREATE ROLE backoffice_app_user LOGIN PASSWORD 'backoffice_app_user_password';
     END IF;

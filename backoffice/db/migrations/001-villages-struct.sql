@@ -1,13 +1,12 @@
 -- migrate:up
 --
 -- ============================================
--- district > tahsil > village
+-- backoffice_data.district > backoffice_data > village
 -- Soft deletes (deleted_at)
 -- Timestamps + auto updated_at trigger
 -- contact with JSONB address + GIN index
 -- Many-to-many: contact <-> village (village_contact)
 -- visit table linked to village
--- Village now references map_data.planet_osm_point(osm_id)
 -- ============================================
 
 -- --------------------------------------------
@@ -22,9 +21,9 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- --------------------------------------------
--- district table
+-- backoffice_data.district table
 -- --------------------------------------------
-CREATE TABLE district (
+CREATE TABLE backoffice_data.district (
     id SERIAL PRIMARY KEY,
     name TEXT NOT NULL UNIQUE,
 
@@ -33,30 +32,30 @@ CREATE TABLE district (
     deleted_at TIMESTAMPTZ NULL
 );
 
-CREATE TRIGGER trg_district_set_updated_at
-BEFORE UPDATE ON district
+CREATE TRIGGER trg_backoffice_data.district_set_updated_at
+BEFORE UPDATE ON backoffice_data.district
 FOR EACH ROW
 EXECUTE FUNCTION set_updated_at();
 
 -- --------------------------------------------
--- tahsil table
+-- backoffice_data table
 -- --------------------------------------------
-CREATE TABLE tahsil (
+CREATE TABLE backoffice_data (
     id SERIAL PRIMARY KEY,
-    id_district INT NOT NULL REFERENCES district(id),
+    id_backoffice_data.district INT NOT NULL REFERENCES backoffice_data.district(id),
     name TEXT NOT NULL,
 
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     deleted_at TIMESTAMPTZ NULL,
 
-    UNIQUE (id_district, name)
+    UNIQUE (id_backoffice_data.district, name)
 );
 
-CREATE INDEX idx_tahsil_id_district ON tahsil(id_district);
+CREATE INDEX idx_backoffice_data_id_backoffice_data.district ON backoffice_data(id_backoffice_data.district);
 
-CREATE TRIGGER trg_tahsil_set_updated_at
-BEFORE UPDATE ON tahsil
+CREATE TRIGGER trg_backoffice_data_set_updated_at
+BEFORE UPDATE ON backoffice_data
 FOR EACH ROW
 EXECUTE FUNCTION set_updated_at();
 
@@ -65,7 +64,7 @@ EXECUTE FUNCTION set_updated_at();
 -- --------------------------------------------
 CREATE TABLE village (
     id SERIAL PRIMARY KEY,
-    id_tahsil INT NOT NULL REFERENCES tahsil(id),
+    id_backoffice_data INT NOT NULL REFERENCES backoffice_data(id),
     name TEXT NOT NULL,
 
     -- FK to map_data.planet_osm_point(osm_id), nullable
@@ -76,10 +75,10 @@ CREATE TABLE village (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     deleted_at TIMESTAMPTZ NULL,
 
-    UNIQUE (id_tahsil, name)
+    UNIQUE (id_backoffice_data, name)
 );
 
-CREATE INDEX idx_village_id_tahsil ON village(id_tahsil);
+CREATE INDEX idx_village_id_backoffice_data ON village(id_backoffice_data);
 CREATE INDEX idx_village_id_map_data_point ON village(id_map_data_point);
 
 CREATE TRIGGER trg_village_set_updated_at

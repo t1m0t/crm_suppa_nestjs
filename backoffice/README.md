@@ -1,5 +1,34 @@
 # DB Setup
 
+## Create SCHEMA
+
+```sql
+-- create schema
+DO $$
+  BEGIN
+    IF NOT EXISTS (
+      SELECT FROM information_schema.schemata WHERE schema_name = 'map_data'
+    ) THEN
+      EXECUTE 'CREATE SCHEMA map_data';
+  END IF;
+END
+$$;
+```
+
+```sql
+-- create schema
+DO $$
+  BEGIN
+    IF NOT EXISTS (
+      SELECT FROM information_schema.schemata WHERE schema_name = 'backoffice_app'
+    ) THEN
+      EXECUTE 'CREATE SCHEMA backoffice_app';
+  END IF;
+END
+$$;
+
+```
+
 ## Create migration user
 
 ```sql

@@ -6,11 +6,26 @@ import {
 	getLastMigration,
 } from "./migration-utils";
 
+type TEnvData = {
+	dbParams: {
+		maxPoolCon: number | undefined;
+		idleTimeout: number | undefined;
+		conMaxLifetime: number | undefined;
+		migrationUser: {
+			name: string | undefined;
+			password: string | undefined;
+		};
+	};
+};
+
 class MigrationManager {
-	private sqlMapDataAdmin: SQL.Query<SQL.Options>;
-	private sqlBackofficeAdmin: SQL.Query<SQL.Options>;
+	private sqlClient: SQL.Query<SQL.Options>;
 
 	constructor() {
+		const envData = this.getEnvData();
+
+		const url = `postgres://${process.env.DB_MAP_DATA_ADMIN_NAME}:${process.env.DB_MAP_DATA_ADMIN_PASSWORD}@${process.env.DB_HOST}:${process.env.DB_PORT}/${process.env.DB_NAME}`;
+		console.debug("Database URL:", url);
 		this.sqlMapDataAdmin = new SQL({
 			// Connection details (adapter is auto-detected as PostgreSQL)
 			url: `postgres://${process.env.DB_MAP_DATA_ADMIN_NAME}:${process.env.DB_MAP_DATA_ADMIN_PASSWORD}@${process.env.DB_HOST}:${process.env.DB_PORT}/${process.env.DB_NAME}`,
@@ -62,13 +77,48 @@ class MigrationManager {
 		this.ensureDatabaseSetup();
 	}
 
+	private getEnvData(): TEnvData {
+		const envRequired: Array<string> = [
+			"DB_MAX_POOL_CON",
+			"DB_IDLE_TIMEOUT",
+			"DB_MAX_CON_LIFETIME",
+			"DB_MIGRATION_USER",
+			"DB_MIGRATION_PASSWORD",
+		];
+
+		const missingEnv: Array<string> = [];
+		envRequired.forEach((key) => {
+			if (!process.env[key]) missingEnv.push(key);
+		});
+
+		if (missingEnv.length > 0) {
+			throw new Error(
+				`Missing environment variables: ${missingEnv.join(", ")}`,
+			);
+		}
+
+		const envData: TEnvData = {
+			dbParams: {
+				maxPoolCon: Number(process.env.DB_MAX_POOL_CON),
+				idleTimeout: Number(process.env.DB_IDLE_TIMEOUT),
+				conMaxLifetime: Number(process.env.DB_MAX_CON_LIFETIME),
+				migrationUser: {
+					name: "DB_MIGRATION_USER",
+					password: "DB_MIGRATION_PASSWORD",
+				},
+			},
+		};
+
+		return envData;
+	}
+
 	private async ensureDatabaseSetup() {
 		await this.ensureMigrationsTable();
 	}
 
 	private async ensureMigrationsTable() {
 		await sql`
-    CREATE TABLE IF NOT EXISTS migrations (
+    CREATE TABLE IF NOT EXISTS public.migrations (
       id SERIAL PRIMARY KEY,
       name TEXT NOT NULL UNIQUE,
       run_on TIMESTAMP DEFAULT NOW()
@@ -94,7 +144,7 @@ class MigrationManager {
 
 		for (const file of files) {
 			if (applied.has(file)) {
-				console.log(`✔ Already applied: ${file}`);
+				console.log(`√ Already applied: ${file}`);
 				continue;
 			}
 
@@ -112,7 +162,7 @@ class MigrationManager {
         `;
 				});
 
-				console.log(`✔ Applied: ${file}`);
+				console.log(`√ Applied: ${file}`);
 			} catch (err) {
 				console.error(`❌ Failed on ${file}`);
 				console.error(err);
@@ -151,7 +201,7 @@ class MigrationManager {
 				await tx`DELETE FROM migrations WHERE name = ${last}`;
 			});
 
-			console.log(`✔ Rolled back: ${last}`);
+			console.log(`√ Rolled back: ${last}`);
 		} catch (err) {
 			console.error(`❌ Failed to rollback ${last}`);
 			console.error(err);

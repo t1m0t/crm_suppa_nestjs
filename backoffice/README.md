@@ -1,138 +1,77 @@
 # DB Setup
 
-- for MAP DATA
+## Create migration user
 
 ```sql
--- create admin user
-DO $$
-  BEGIN
-    IF NOT EXISTS (
-        SELECT FROM pg_catalog.pg_roles WHERE rolname = 'map_data_admin'
-    ) THEN
-        CREATE ROLE map_data_admin LOGIN PASSWORD 'map_data_admin_password';
-    END IF;
-  END
-$$;
+CREATE USER migration_user WITH PASSWORD 'migration_user_password';
+GRANT CONNECT ON DATABASE suppavisor_backoffice TO migration_user;
 
--- create app user
-DO $$
-  BEGIN
-    IF NOT EXISTS (
-        SELECT FROM pg_catalog.pg_roles WHERE rolname = 'map_data_user'
-    ) THEN
-        CREATE ROLE map_data_user LOGIN PASSWORD 'map_data_user_password';
-    END IF;
-  END
-$$;
+GRANT USAGE, CREATE ON SCHEMA map_data TO migration_user;
+GRANT USAGE, CREATE ON SCHEMA backoffice_data TO migration_user;
 
--- create schema
-DO $$
-  BEGIN
-    IF NOT EXISTS (
-      SELECT FROM information_schema.schemata WHERE schema_name = 'map_data'
-    ) THEN
-      EXECUTE 'CREATE SCHEMA map_data AUTHORIZATION map_data_admin';
-  END IF;
-END
-$$;
+GRANT SELECT, INSERT, UPDATE, DELETE
+ON TABLE public.migration
+TO migration_user;
 
-REVOKE ALL ON SCHEMA map_data FROM PUBLIC;
+REVOKE ALL ON SCHEMA public FROM migration_user;
 
--- permissions admin
-GRANT USAGE, CREATE ON SCHEMA map_data TO map_data_admin;
-GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA map_data TO map_data_admin;
-GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA map_data TO map_data_admin;
-GRANT ALL PRIVILEGES ON ALL FUNCTIONS IN SCHEMA map_data TO map_data_admin;
+ALTER DEFAULT PRIVILEGES
+IN SCHEMA map_data
+GRANT ALL ON TABLES TO migration_user;
 
-ALTER DEFAULT PRIVILEGES FOR USER map_data_admin IN SCHEMA map_data
-GRANT ALL PRIVILEGES ON TABLES TO map_data_admin;
+ALTER DEFAULT PRIVILEGES
+IN SCHEMA backoffice_data
+GRANT ALL ON TABLES TO migration_user;
 
-ALTER DEFAULT PRIVILEGES FOR USER map_data_admin IN SCHEMA map_data
-GRANT ALL PRIVILEGES ON SEQUENCES TO map_data_admin;
+ALTER DEFAULT PRIVILEGES
+IN SCHEMA map_data
+GRANT ALL ON SEQUENCES TO migration_user;
 
-ALTER DEFAULT PRIVILEGES FOR USER map_data_admin IN SCHEMA map_data
-GRANT ALL PRIVILEGES ON FUNCTIONS TO map_data_admin;
-
--- permissions app user
-GRANT USAGE ON SCHEMA map_data TO map_data_user;
-
-GRANT SELECT, UPDATE ON ALL TABLES IN SCHEMA map_data TO map_data_user;
-GRANT SELECT ON ALL SEQUENCES IN SCHEMA map_data TO map_data_user;
-
-ALTER DEFAULT PRIVILEGES FOR USER map_data_admin IN SCHEMA map_data
-GRANT SELECT, UPDATE ON TABLES TO map_data_user;
-
-ALTER DEFAULT PRIVILEGES FOR USER map_data_admin IN SCHEMA map_data
-GRANT SELECT ON SEQUENCES TO map_data_user;
-
+ALTER DEFAULT PRIVILEGES
+IN SCHEMA backoffice_data
+GRANT ALL ON SEQUENCES TO migration_user;
 ```
 
-- for BACKOFFICE_APP
+## Create app user
 
 ```sql
--- create admin user
-DO $$
-  BEGIN
-    IF NOT EXISTS (
-        SELECT FROM pg_catalog.pg_roles WHERE rolname = 'backoffice_app_admin'
-    ) THEN
-        CREATE ROLE backoffice_app_admin LOGIN PASSWORD 'backoffice_app_admin_password';
-    END IF;
-  END
-$$;
+CREATE USER app_user WITH PASSWORD 'app_user_password';
 
--- create app user
-DO $$
-  BEGIN
-    IF NOT EXISTS (
-        SELECT FROM pg_catalog.pg_roles WHERE rolname = 'backoffice_app_user'
-    ) THEN
-        CREATE ROLE backoffice_app_user LOGIN PASSWORD 'backoffice_app_user_password';
-    END IF;
-  END
-$$;
+GRANT CONNECT ON DATABASE suppavisor_backoffice TO app_user;
 
--- create schema
-DO $$
-  BEGIN
-    IF NOT EXISTS (
-      SELECT FROM information_schema.schemata WHERE schema_name = 'backoffice_app'
-    ) THEN
-      EXECUTE 'CREATE SCHEMA backoffice_app AUTHORIZATION backoffice_app_admin';
-  END IF;
-END
-$$;
+GRANT USAGE ON SCHEMA map_data TO app_user;
+GRANT USAGE ON SCHEMA backoffice_data TO app_user;
 
-REVOKE ALL ON SCHEMA backoffice_app FROM PUBLIC;
+GRANT SELECT, INSERT, UPDATE, DELETE
+ON ALL TABLES IN SCHEMA map_data
+TO app_user;
 
--- permissions admin
-GRANT USAGE, CREATE ON SCHEMA backoffice_app TO backoffice_app_admin;
-GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA backoffice_app TO backoffice_app_admin;
-GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA backoffice_app TO backoffice_app_admin;
-GRANT ALL PRIVILEGES ON ALL FUNCTIONS IN SCHEMA backoffice_app TO backoffice_app_admin;
+GRANT SELECT, INSERT, UPDATE, DELETE
+ON ALL TABLES IN SCHEMA backoffice_data
+TO app_user;
 
-ALTER DEFAULT PRIVILEGES FOR USER backoffice_app_admin IN SCHEMA backoffice_app
-GRANT ALL PRIVILEGES ON TABLES TO backoffice_app_admin;
+GRANT USAGE, SELECT
+ON ALL SEQUENCES IN SCHEMA map_data
+TO app_user;
 
-ALTER DEFAULT PRIVILEGES FOR USER backoffice_app_admin IN SCHEMA backoffice_app
-GRANT ALL PRIVILEGES ON SEQUENCES TO backoffice_app_admin;
+GRANT USAGE, SELECT
+ON ALL SEQUENCES IN SCHEMA backoffice_data
+TO app_user;
 
-ALTER DEFAULT PRIVILEGES FOR USER backoffice_app_admin IN SCHEMA backoffice_app
-GRANT ALL PRIVILEGES ON FUNCTIONS TO backoffice_app_admin;
+ALTER DEFAULT PRIVILEGES
+IN SCHEMA map_data
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO app_user;
 
--- permissions app user
-GRANT USAGE ON SCHEMA backoffice_app TO backoffice_app_user;
+ALTER DEFAULT PRIVILEGES
+IN SCHEMA backoffice_data
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO app_user;
 
-GRANT SELECT, UPDATE ON ALL TABLES IN SCHEMA backoffice_app TO backoffice_app_user;
-GRANT SELECT ON ALL SEQUENCES IN SCHEMA backoffice_app TO backoffice_app_user;
+ALTER DEFAULT PRIVILEGES
+IN SCHEMA map_data
+GRANT USAGE, SELECT ON SEQUENCES TO app_user;
 
-ALTER DEFAULT PRIVILEGES FOR USER backoffice_app_admin IN SCHEMA backoffice_app
-GRANT SELECT, UPDATE ON TABLES TO backoffice_app_user;
-
-ALTER DEFAULT PRIVILEGES FOR USER backoffice_app_admin IN SCHEMA backoffice_app
-GRANT SELECT ON SEQUENCES TO backoffice_app_user;
-```
-
-```
+ALTER DEFAULT PRIVILEGES
+IN SCHEMA backoffice_data
+GRANT USAGE, SELECT ON SEQUENCES TO app_user;
 
 ```

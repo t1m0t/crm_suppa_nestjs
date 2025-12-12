@@ -18,8 +18,9 @@ This file details the steps to install postGIS server to serve maps to a web cli
    `psql -U postgres -h localhost`
    then in psql:
    `create database suppavisor_backoffice;`
-4. Run this command to import
-   `osm2pgsql -d <database> -U <user> -W -H localhost path/where/the/file/is/map.pbf`
+4. Create users and schema as per [instruction](https://github.com/t1m0t/crm_suppa_nestjs/tree/1-tba/backoffice)
+5. Run this command to import
+   `osm2pgsql -d <database> -U <user> --schema <schema_name> -W -H localhost path/where/the/file/is/map.pbf`
 
 # Cache table setup
 

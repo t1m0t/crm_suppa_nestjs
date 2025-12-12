@@ -7,7 +7,13 @@
 	},
 	"files": {
 		"ignoreUnknown": false,
-		"includes": ["**", "!**/dist", "!**/venv", "!**/ressources"]
+		"includes": [
+			"**",
+			"!**/dist",
+			"!**/venv",
+			"!**/ressources",
+			"!**/test_samples"
+		]
 	},
 	"formatter": {
 		"enabled": true,
@@ -16,7 +22,7 @@
 	"assist": {
 		"actions": {
 			"source": {
-				"organizeImports": "off"
+				"organizeImports": "on"
 			}
 		}
 	},
@@ -28,7 +34,9 @@
 				"noThisInStatic": "off"
 			},
 			"style": {
-				"useImportType": "off"
+				"useImportType": "off",
+				"useNodejsImportProtocol": "off",
+				"noNonNullAssertion": "off"
 			}
 		}
 	},

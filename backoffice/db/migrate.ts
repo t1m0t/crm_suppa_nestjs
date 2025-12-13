@@ -1,4 +1,4 @@
-import { sql, SQL } from "bun";
+import { SQL } from "bun";
 import {
 	listMigrationFiles,
 	getMigrationPath,
@@ -11,10 +11,14 @@ type TEnvData = {
 		maxPoolCon: number | undefined;
 		idleTimeout: number | undefined;
 		conMaxLifetime: number | undefined;
-		migrationUser: {
-			name: string | undefined;
-			password: string | undefined;
-		};
+		conTimeout: number | undefined;
+		dbHost: string | undefined;
+		dbPort: string | undefined;
+		dbName: string | undefined;
+	};
+	migrationUser: {
+		name: string | undefined;
+		password: string | undefined;
 	};
 };
 
@@ -24,41 +28,20 @@ class MigrationManager {
 	constructor() {
 		const envData = this.getEnvData();
 
-		const url = `postgres://${process.env.DB_MAP_DATA_ADMIN_NAME}:${process.env.DB_MAP_DATA_ADMIN_PASSWORD}@${process.env.DB_HOST}:${process.env.DB_PORT}/${process.env.DB_NAME}`;
-		console.debug("Database URL:", url);
-		this.sqlMapDataAdmin = new SQL({
+		const dbUrl = `postgres://${envData.migrationUser.name}:${envData.migrationUser.password}@${envData.dbParams.dbHost}:${envData.dbParams.dbPort}/${envData.dbParams.dbName}`;
+
+		console.debug("Database URL:", dbUrl);
+
+		this.sqlClient = new SQL({
+			adapter: "postgres",
 			// Connection details (adapter is auto-detected as PostgreSQL)
-			url: `postgres://${process.env.DB_MAP_DATA_ADMIN_NAME}:${process.env.DB_MAP_DATA_ADMIN_PASSWORD}@${process.env.DB_HOST}:${process.env.DB_PORT}/${process.env.DB_NAME}`,
+			url: dbUrl,
 
 			// Connection pool settings
-			max: process.env.DB_MAX_POOL_CON, // Maximum connections in pool
-			idleTimeout: process.env.DB_IDLE_TIMEOUT, // Close idle connections after 30s
-			maxLifetime: process.env.DB_MAX_CON_LIFETIME, // Connection lifetime in seconds (0 = forever)
-			connectionTimeout: process.env.DB_CON_TIMEOUT, // Timeout when establishing new connections
-
-			// SSL/TLS options
-			tls: process.env.DATABASE_TLS_ENABLED,
-			// tls: {
-			//   rejectUnauthorized: true,
-			//   requestCert: true,
-			//   ca: "path/to/ca.pem",
-			//   key: "path/to/key.pem",
-			//   cert: "path/to/cert.pem",
-			//   checkServerIdentity(hostname, cert) {
-			//     ...
-			//   },
-			// },
-		});
-
-		this.sqlBackofficeAdmin = new SQL({
-			// Connection details (adapter is auto-detected as PostgreSQL)
-			url: `postgres://${process.env.DB_BACKOFFICE_APP_ADMIN_NAME}:${process.env.DB_BACKOFFICE_APP_ADMIN_PASSWORD}@${process.env.DB_HOST}:${process.env.DB_PORT}/${process.env.DB_NAME}`,
-
-			// Connection pool settings
-			max: process.env.DB_MAX_POOL_CON, // Maximum connections in pool
-			idleTimeout: process.env.DB_IDLE_TIMEOUT, // Close idle connections after 30s
-			maxLifetime: process.env.DB_MAX_CON_LIFETIME, // Connection lifetime in seconds (0 = forever)
-			connectionTimeout: process.env.DB_CON_TIMEOUT, // Timeout when establishing new connections
+			max: envData.dbParams.maxPoolCon, // Maximum connections in pool
+			idleTimeout: envData.dbParams.idleTimeout, // Close idle connections after 30s
+			maxLifetime: envData.dbParams.conMaxLifetime, // Connection lifetime in seconds (0 = forever)
+			connectionTimeout: envData.dbParams.conTimeout, // Timeout when establishing new connections
 
 			// SSL/TLS options
 			tls: process.env.DATABASE_TLS_ENABLED,
@@ -82,8 +65,12 @@ class MigrationManager {
 			"DB_MAX_POOL_CON",
 			"DB_IDLE_TIMEOUT",
 			"DB_MAX_CON_LIFETIME",
+			"DB_CON_TIMEOUT",
 			"DB_MIGRATION_USER",
 			"DB_MIGRATION_PASSWORD",
+			"DB_HOST",
+			"DB_PORT",
+			"DB_NAME",
 		];
 
 		const missingEnv: Array<string> = [];
@@ -102,10 +89,14 @@ class MigrationManager {
 				maxPoolCon: Number(process.env.DB_MAX_POOL_CON),
 				idleTimeout: Number(process.env.DB_IDLE_TIMEOUT),
 				conMaxLifetime: Number(process.env.DB_MAX_CON_LIFETIME),
-				migrationUser: {
-					name: "DB_MIGRATION_USER",
-					password: "DB_MIGRATION_PASSWORD",
-				},
+				conTimeout: Number(process.env.DB_CON_TIMEOUT),
+				dbHost: process.env.DB_HOST,
+				dbPort: process.env.DB_PORT,
+				dbName: process.env.DB_NAME,
+			},
+			migrationUser: {
+				name: process.env.DB_MIGRATION_USER,
+				password: process.env.DB_MIGRATION_PASSWORD,
 			},
 		};
 
@@ -117,8 +108,8 @@ class MigrationManager {
 	}
 
 	private async ensureMigrationsTable() {
-		await sql`
-    CREATE TABLE IF NOT EXISTS public.migrations (
+		await this.sqlClient`
+    CREATE TABLE IF NOT EXISTS backoffice_data.migrations (
       id SERIAL PRIMARY KEY,
       name TEXT NOT NULL UNIQUE,
       run_on TIMESTAMP DEFAULT NOW()
@@ -127,9 +118,9 @@ class MigrationManager {
 	}
 
 	private async getAppliedMigrations(): Promise<Set<string>> {
-		const rows = await sql<
+		const rows = await this.sqlClient<
 			{ name: string }[]
-		>`SELECT name FROM migrations ORDER BY id`;
+		>`SELECT name FROM backoffice_data.migrations ORDER BY id`;
 		return new Set(rows.map((r) => r.name));
 	}
 
@@ -154,10 +145,10 @@ class MigrationManager {
 			console.log(`➡ Applying ${file} ...`);
 
 			try {
-				await sql.begin(async (tx) => {
+				await this.sqlClient.begin(async (tx) => {
 					await tx`${parsed.up}`;
 					await tx`
-          INSERT INTO migrations (name)
+          INSERT INTO backoffice_data.migrations (name)
           VALUES (${file})
         `;
 				});
@@ -170,7 +161,7 @@ class MigrationManager {
 			}
 		}
 
-		await sql.end();
+		await this.sqlClient.end();
 	}
 
 	public async rollback() {
@@ -178,7 +169,7 @@ class MigrationManager {
 
 		if (!last) {
 			console.log("No migrations to rollback.");
-			await sql.end();
+			await this.sqlClient.end();
 			return;
 		}
 
@@ -189,16 +180,16 @@ class MigrationManager {
 			console.error(
 				`❌ Migration ${last} has no "down" section. Cannot rollback safely.`,
 			);
-			await sql.end();
+			await this.sqlClient.end();
 			process.exit(1);
 		}
 
 		console.log(`↩ Rolling back ${last} ...`);
 
 		try {
-			await sql.begin(async (tx) => {
+			await this.sqlClient.begin(async (tx) => {
 				await tx`${parsed.down!}`;
-				await tx`DELETE FROM migrations WHERE name = ${last}`;
+				await tx`DELETE FROM backoffice_data.migrations WHERE name = ${last}`;
 			});
 
 			console.log(`√ Rolled back: ${last}`);
@@ -207,7 +198,7 @@ class MigrationManager {
 			console.error(err);
 			process.exit(1);
 		} finally {
-			await sql.end();
+			await this.sqlClient.end();
 		}
 	}
 }

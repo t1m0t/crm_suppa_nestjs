@@ -20,92 +20,16 @@ $$;
 DO $$
   BEGIN
     IF NOT EXISTS (
-      SELECT FROM information_schema.schemata WHERE schema_name = 'backoffice_app'
+      SELECT FROM information_schema.schemata WHERE schema_name = 'backoffice_data'
     ) THEN
-      EXECUTE 'CREATE SCHEMA backoffice_app';
+      EXECUTE 'CREATE SCHEMA backoffice_data';
   END IF;
 END
 $$;
 
 ```
 
-## Create migration user
-
-```sql
-CREATE USER migration_user WITH PASSWORD 'migration_user_password';
-GRANT CONNECT ON DATABASE suppavisor_backoffice TO migration_user;
-
-GRANT USAGE, CREATE ON SCHEMA map_data TO migration_user;
-GRANT USAGE, CREATE ON SCHEMA backoffice_data TO migration_user;
-
-GRANT SELECT, INSERT, UPDATE, DELETE
-ON TABLE public.migration
-TO migration_user;
-
-REVOKE ALL ON SCHEMA public FROM migration_user;
-
-ALTER DEFAULT PRIVILEGES
-IN SCHEMA map_data
-GRANT ALL ON TABLES TO migration_user;
-
-ALTER DEFAULT PRIVILEGES
-IN SCHEMA backoffice_data
-GRANT ALL ON TABLES TO migration_user;
-
-ALTER DEFAULT PRIVILEGES
-IN SCHEMA map_data
-GRANT ALL ON SEQUENCES TO migration_user;
-
-ALTER DEFAULT PRIVILEGES
-IN SCHEMA backoffice_data
-GRANT ALL ON SEQUENCES TO migration_user;
-```
-
-## Create app user
-
-```sql
-CREATE USER app_user WITH PASSWORD 'app_user_password';
-
-GRANT CONNECT ON DATABASE suppavisor_backoffice TO app_user;
-
-GRANT USAGE ON SCHEMA map_data TO app_user;
-GRANT USAGE ON SCHEMA backoffice_data TO app_user;
-
-GRANT SELECT, INSERT, UPDATE, DELETE
-ON ALL TABLES IN SCHEMA map_data
-TO app_user;
-
-GRANT SELECT, INSERT, UPDATE, DELETE
-ON ALL TABLES IN SCHEMA backoffice_data
-TO app_user;
-
-GRANT USAGE, SELECT
-ON ALL SEQUENCES IN SCHEMA map_data
-TO app_user;
-
-GRANT USAGE, SELECT
-ON ALL SEQUENCES IN SCHEMA backoffice_data
-TO app_user;
-
-ALTER DEFAULT PRIVILEGES
-IN SCHEMA map_data
-GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO app_user;
-
-ALTER DEFAULT PRIVILEGES
-IN SCHEMA backoffice_data
-GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO app_user;
-
-ALTER DEFAULT PRIVILEGES
-IN SCHEMA map_data
-GRANT USAGE, SELECT ON SEQUENCES TO app_user;
-
-ALTER DEFAULT PRIVILEGES
-IN SCHEMA backoffice_data
-GRANT USAGE, SELECT ON SEQUENCES TO app_user;
-
-```
-
-ALternative setup
+## Create roles and permissions
 
 ```sql
 -- ============================================================
@@ -122,7 +46,7 @@ ALternative setup
 --
 -- Suggestion:
 -- Run as postgres / DB owner:
---   psql -U postgres -d YOUR_DB -f setup_roles.sql
+--   psql -U postgres -d suppavisor_backoffice -f setup_roles.sql
 -- ============================================================
 
 -- -----------------------
@@ -146,18 +70,18 @@ DO $$
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'admin_user') THEN
     CREATE ROLE admin_user
-      WITH LOGIN PASSWORD 'CHANGE_ME_admin_password'
+      WITH LOGIN PASSWORD 'admin_password'
       CREATEDB CREATEROLE;
   END IF;
 
   IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'migration_user') THEN
     CREATE ROLE migration_user
-      WITH LOGIN PASSWORD 'CHANGE_ME_migration_password';
+      WITH LOGIN PASSWORD 'migration_password';
   END IF;
 
   IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'app_user') THEN
     CREATE ROLE app_user
-      WITH LOGIN PASSWORD 'CHANGE_ME_app_password';
+      WITH LOGIN PASSWORD 'app_password';
   END IF;
 END $$;
 
@@ -170,11 +94,11 @@ GRANT role_app_rw TO app_user;
 -- -----------------------
 -- 3) Database-level access
 -- -----------------------
-GRANT CONNECT ON DATABASE YOUR_DB
+GRANT CONNECT ON DATABASE suppavisor_backoffice
 TO admin_user, migration_user, app_user;
 
 -- Optional:
--- GRANT CREATE ON DATABASE YOUR_DB TO admin_user; -- extensions
+-- GRANT CREATE ON DATABASE suppavisor_backoffice TO admin_user; -- extensions
 
 -- -----------------------
 -- 4) Create schemas owned by role_migrate
@@ -222,20 +146,4 @@ GRANT USAGE, SELECT ON SEQUENCES TO role_app_rw;
 -- 7) Keep admin_user out of app schemas (strict boundary)
 -- -----------------------
 REVOKE ALL ON SCHEMA map_data, backoffice_data FROM admin_user;
-
--- Optional (metadata visibility only):
--- GRANT USAGE ON SCHEMA map_data, backoffice_data TO admin_user;
-
--- -----------------------
--- 8) Optional hardening suggestions
--- -----------------------
--- A) Lock down public schema if unused
--- REVOKE CREATE ON SCHEMA public FROM PUBLIC;
-
--- B) Ensure migrations run as migration_user
---    (migration_user inherits role_migrate)
-
--- C) Never connect apps using role_migrate or admin_user
--- ============================================================
-
 ```

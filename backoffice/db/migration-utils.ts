@@ -1,7 +1,8 @@
 // scripts/migration-utils.ts
-import { sql } from "bun";
 import { readdirSync, readFileSync } from "fs";
 import path from "path";
+
+const migrationDir = "./db/migrations";
 
 export type ParsedMigration = {
 	name: string;
@@ -47,25 +48,33 @@ export function parseMigrationFile(
 }
 
 // List migration files sorted (001_..., 002_... or timestamp-based)
-export function listMigrationFiles(dir = "./migrations"): string[] {
+export function listMigrationFiles(dir = migrationDir): string[] {
 	return readdirSync(dir)
 		.filter((f) => f.endsWith(".sql"))
 		.sort(); // lexicographic sort works with 001_ / 20250101_...
 }
 
-export function getMigrationPath(
-	fileName: string,
-	dir = "./migrations",
-): string {
+export function getMigrationPath(fileName: string, dir = migrationDir): string {
 	return path.join(dir, fileName);
 }
 
-export async function getLastMigration(): Promise<string | null> {
-	const rows = await sql<{ name: string }[]>`
+export async function getLastMigration(sqlClient): Promise<string | null> {
+	const rows = await sqlClient<{ name: string }[]>`
     SELECT name
-    FROM migrations
+    FROM backoffice_data.migrations
     ORDER BY run_on DESC, id DESC
     LIMIT 1
   `;
 	return rows.length ? rows[0].name : null;
+}
+
+export function getSqlContext(sql: string, position: number, radius = 40) {
+	const index = Math.max(0, position - 1); // convert to 0-based
+	const start = Math.max(0, index - radius);
+	const end = Math.min(sql.length, index + radius);
+
+	return {
+		snippet: sql.slice(start, end),
+		pointer: " ".repeat(index - start) + "^",
+	};
 }

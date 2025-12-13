@@ -17,23 +17,14 @@ This file details the steps to install postGIS server to serve maps to a web cli
 3. Create the database
    `psql -U postgres -h localhost`
    then in psql:
-   `create database punjab_map;`
-4. Activate the extensions for the database
-   Still in psql, connect to the database with `\c punjab_map`
-   Then:
-
-```sql
-CREATE EXTENSION IF NOT EXISTS postgis;
-CREATE EXTENSION IF NOT EXISTS postgis_topology;
-CREATE EXTENSION IF NOT EXISTS hstore;
-```
-
+   `create database suppavisor_backoffice;`
+4. Create users and schema as per [instruction](https://github.com/t1m0t/crm_suppa_nestjs/tree/1-tba/backoffice)
 5. Run this command to import
-   `osm2pgsql -d <database> -U <user> -W -H localhost path/where/the/file/is/map.pbf`
+   `osm2pgsql -d <database> -U <user> --schema <schema_name> -W -H localhost path/where/the/file/is/map.pbf`
 
 # Cache table setup
 
-Still in `punjab_map` with `\c punjab_map`
+Still in `suppavisor_backoffice` with `\c suppavisor_backoffice`
 
 ```sql
 -- Create cache table
@@ -81,9 +72,9 @@ AS SELECT osm_id,
     way
 FROM planet_osm_point
 WHERE
-	name IS NOT NULL AND
-	power is null AND
-	amenity is null
+ name IS NOT NULL AND
+ power is null AND
+ amenity is null
 ;
 
 GRANT SELECT ON public.v_osm_points_pinds TO postgres;
@@ -96,15 +87,15 @@ CREATE OR REPLACE VIEW public.v_osm_polygons_admin_4
 as select osm_id, admin_level, name, way_area, way
 FROM public.planet_osm_polygon
 where
-	name is not null and
-	amenity is null and
-	power is null and
-	shop is null and
-	tourism is null and
-	water is null and
-	leisure is null and
-	boundary = 'administrative' and
-	admin_level = '4'
+ name is not null and
+ amenity is null and
+ power is null and
+ shop is null and
+ tourism is null and
+ water is null and
+ leisure is null and
+ boundary = 'administrative' and
+ admin_level = '4'
 ;
 
 GRANT SELECT ON public.v_osm_polygons_admin_4 TO postgres;
@@ -115,15 +106,15 @@ CREATE OR REPLACE VIEW public.v_osm_polygons_admin_5
 as select osm_id, admin_level, name, way_area, way
 FROM public.planet_osm_polygon
 where
-	name is not null and
-	amenity is null and
-	power is null and
-	shop is null and
-	tourism is null and
-	water is null and
-	leisure is null and
-	boundary = 'administrative' and
-	admin_level = '5'
+ name is not null and
+ amenity is null and
+ power is null and
+ shop is null and
+ tourism is null and
+ water is null and
+ leisure is null and
+ boundary = 'administrative' and
+ admin_level = '5'
 ;
 
 GRANT SELECT ON public.v_osm_polygons_admin_5 TO postgres;
@@ -134,15 +125,15 @@ CREATE OR REPLACE VIEW public.v_osm_polygons_admin_6
 as select osm_id, admin_level, name, way_area, way
 FROM public.planet_osm_polygon
 where
-	name is not null and
-	amenity is null and
-	power is null and
-	shop is null and
-	tourism is null and
-	water is null and
-	leisure is null and
-	boundary = 'administrative' and
-	admin_level = '6'
+ name is not null and
+ amenity is null and
+ power is null and
+ shop is null and
+ tourism is null and
+ water is null and
+ leisure is null and
+ boundary = 'administrative' and
+ admin_level = '6'
 ;
 
 GRANT SELECT ON public.v_osm_polygons_admin_6 TO postgres;

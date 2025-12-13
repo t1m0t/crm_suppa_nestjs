@@ -259,7 +259,7 @@ class MigrationManager {
 
 		return {
 			snippet: sql.slice(start, end),
-			pointer: " ".repeat(index - start) + "^",
+			pointer: `${".".repeat(index - start)}^`,
 		};
 	}
 }

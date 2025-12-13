@@ -23,7 +23,7 @@ $$ LANGUAGE plpgsql;
 -- --------------------------------------------
 -- backoffice_data.district table
 -- --------------------------------------------
-CREATE TABLE backoffice_data.district (
+create table if not exists backoffice_data.district (
     id SERIAL PRIMARY KEY,
     name TEXT NOT NULL UNIQUE,
 
@@ -32,18 +32,18 @@ CREATE TABLE backoffice_data.district (
     deleted_at TIMESTAMPTZ NULL
 );
 
-DROP TRIGGER IF EXISTS trg_district_backoffice_data.set_updated_at()
+DROP TRIGGER IF EXISTS set_updated_at
 ON backoffice_data.district;
 
-CREATE TRIGGER trg_district_backoffice_data.set_updated_at()
+CREATE TRIGGER set_updated_at
 BEFORE UPDATE ON backoffice_data.district
 FOR EACH ROW
-EXECUTE FUNCTION backoffice_data.set_updated_at(;
+EXECUTE FUNCTION backoffice_data.set_updated_at();
 
 -- --------------------------------------------
 -- backoffice_data table
 -- --------------------------------------------
-CREATE TABLE backoffice_data.tahsil (
+create table if not exists backoffice_data.tahsil (
     id SERIAL PRIMARY KEY,
     id_district INT NOT NULL REFERENCES backoffice_data.district(id),
     name TEXT NOT NULL,
@@ -57,10 +57,10 @@ CREATE TABLE backoffice_data.tahsil (
 
 CREATE INDEX IF NOT EXISTS idx_backoffice_data_id_district ON backoffice_data.tahsil(id_district);
 
-DROP TRIGGER IF EXISTS trg_tahsil_backoffice_data.set_updated_at()
+DROP TRIGGER IF EXISTS set_updated_at
 ON backoffice_data.tahsil;
 
-CREATE TRIGGER trg_tahsil_backoffice_data.set_updated_at()
+CREATE TRIGGER set_updated_at
 BEFORE UPDATE ON backoffice_data.tahsil
 FOR EACH ROW
 EXECUTE FUNCTION backoffice_data.set_updated_at();
@@ -68,14 +68,15 @@ EXECUTE FUNCTION backoffice_data.set_updated_at();
 -- --------------------------------------------
 -- village table
 -- --------------------------------------------
-CREATE TABLE backoffice_data.village (
+
+create table if not exists backoffice_data.village (
     id SERIAL PRIMARY KEY,
     id_tahsil INT NOT NULL REFERENCES backoffice_data.tahsil(id),
     name TEXT NOT NULL,
 
     -- FK to map_data.planet_osm_point(osm_id), nullable
     id_map_data_point BIGINT NULL
-        REFERENCES map_data.planet_osm_point(osm_id),
+        REFERENCES map_data.planet_osm_point(id),
 
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -87,10 +88,10 @@ CREATE TABLE backoffice_data.village (
 CREATE INDEX if not exists idx_village_id_tahsil ON backoffice_data.village(id_tahsil);
 CREATE INDEX if not exists idx_village_id_map_data_point ON backoffice_data.village(id_map_data_point);
 
-DROP TRIGGER IF EXISTS trg_village_backoffice_data.set_updated_at()
+DROP TRIGGER IF EXISTS set_updated_at
 ON backoffice_data.village;
 
-CREATE TRIGGER trg_village_backoffice_data.set_updated_at()
+CREATE TRIGGER set_updated_at
 BEFORE UPDATE ON backoffice_data.village
 FOR EACH ROW
 EXECUTE FUNCTION backoffice_data.set_updated_at();
@@ -98,7 +99,7 @@ EXECUTE FUNCTION backoffice_data.set_updated_at();
 -- --------------------------------------------
 -- contact table
 -- --------------------------------------------
-CREATE TABLE backoffice_data.contact (
+create table if not exists backoffice_data.contact (
     id SERIAL PRIMARY KEY,
     name TEXT NOT NULL,
 
@@ -115,10 +116,10 @@ CREATE TABLE backoffice_data.contact (
 
 CREATE INDEX if not exists idx_contact_address_gin ON backoffice_data.contact USING GIN (address);
 
-DROP TRIGGER IF EXISTS trg_contact_backoffice_data.set_updated_at()
+DROP TRIGGER IF EXISTS set_updated_at
 ON backoffice_data.contact;
 
-CREATE TRIGGER trg_contact_backoffice_data.set_updated_at()
+CREATE TRIGGER set_updated_at
 BEFORE UPDATE ON backoffice_data.contact
 FOR EACH ROW
 EXECUTE FUNCTION backoffice_data.set_updated_at();
@@ -126,7 +127,7 @@ EXECUTE FUNCTION backoffice_data.set_updated_at();
 -- --------------------------------------------
 -- village_contact pivot table
 -- --------------------------------------------
-CREATE TABLE backoffice_data.village_contact (
+create table if not exists backoffice_data.village_contact (
     id SERIAL PRIMARY KEY,
     id_village INT NOT NULL REFERENCES backoffice_data.village(id),
     id_contact INT NOT NULL REFERENCES backoffice_data.contact(id),
@@ -143,10 +144,10 @@ CREATE TABLE backoffice_data.village_contact (
 CREATE INDEX if not exists idx_village_contact_village ON backoffice_data.village_contact(id_village);
 CREATE INDEX if not exists idx_village_contact_contact ON backoffice_data.village_contact(id_contact);
 
-DROP TRIGGER IF EXISTS trg_village_contact_backoffice_data.set_updated_at()
+DROP TRIGGER IF EXISTS set_updated_at
 ON backoffice_data.district;
 
-CREATE TRIGGER trg_village_contact_backoffice_data.set_updated_at()
+CREATE TRIGGER set_updated_at
 BEFORE UPDATE ON backoffice_data.village_contact
 FOR EACH ROW
 EXECUTE FUNCTION backoffice_data.set_updated_at();
@@ -154,7 +155,7 @@ EXECUTE FUNCTION backoffice_data.set_updated_at();
 -- --------------------------------------------
 -- visit table
 -- --------------------------------------------
-CREATE TABLE backoffice_data.visit (
+create table if not exists backoffice_data.visit (
     id SERIAL PRIMARY KEY,
     id_village INT NOT NULL REFERENCES backoffice_data.village(id),
 
@@ -171,10 +172,10 @@ CREATE TABLE backoffice_data.visit (
 
 CREATE INDEX if not exists idx_visit_id_village ON backoffice_data.visit(id_village);
 
-DROP TRIGGER IF EXISTS trg_visit_backoffice_data.set_updated_at()
+DROP TRIGGER IF EXISTS set_updated_at
 ON backoffice_data.visit;
 
-CREATE TRIGGER trg_visit_backoffice_data.set_updated_at()
+CREATE TRIGGER set_updated_at
 BEFORE UPDATE ON backoffice_data.visit
 FOR EACH ROW
 EXECUTE FUNCTION backoffice_data.set_updated_at();

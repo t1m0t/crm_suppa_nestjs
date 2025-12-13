@@ -146,4 +146,13 @@ GRANT USAGE, SELECT ON SEQUENCES TO role_app_rw;
 -- 7) Keep admin_user out of app schemas (strict boundary)
 -- -----------------------
 REVOKE ALL ON SCHEMA map_data, backoffice_data FROM admin_user;
+
+-- necessary for migration to have point as a FK
+ALTER TABLE map_data.planet_osm_point
+ADD COLUMN id BIGSERIAL PRIMARY KEY;
+
+GRANT REFERENCES ON ALL TABLES IN SCHEMA map_data TO role_migrate;
+ALTER DEFAULT PRIVILEGES FOR ROLE role_migrate IN SCHEMA map_data
+GRANT REFERENCES ON TABLES TO role_migrate;
+
 ```

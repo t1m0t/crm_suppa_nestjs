@@ -22,7 +22,7 @@ This file details the steps to install postGIS server to serve maps to a web cli
 5. Run this command to import
    `osm2pgsql -d <database> -U <user> --schema <schema_name> -W -H localhost path/where/the/file/is/map.pbf`
 
-# Cache table setup
+# Cache table setup (optional)
 
 Still in `suppavisor_backoffice` with `\c suppavisor_backoffice`
 
@@ -66,26 +66,26 @@ pg_tileserv runs in its own service. It is not called directly by the client (if
 ### Pind points
 
 ```sql
-CREATE OR REPLACE VIEW public.v_osm_points_pinds
+CREATE OR REPLACE VIEW map_data.v_osm_points_pinds
 AS SELECT osm_id,
     name,
     way
-FROM planet_osm_point
+FROM map_data.planet_osm_point
 WHERE
  name IS NOT NULL AND
  power is null AND
  amenity is null
 ;
 
-GRANT SELECT ON public.v_osm_points_pinds TO postgres;
+GRANT SELECT ON map_data.v_osm_points_pinds TO pgtileserv_user;
 ```
 
 ### Admin levels
 
 ```sql
-CREATE OR REPLACE VIEW public.v_osm_polygons_admin_4
+CREATE OR REPLACE VIEW map_data.v_osm_polygons_admin_4
 as select osm_id, admin_level, name, way_area, way
-FROM public.planet_osm_polygon
+FROM map_data.planet_osm_polygon
 where
  name is not null and
  amenity is null and
@@ -98,13 +98,11 @@ where
  admin_level = '4'
 ;
 
-GRANT SELECT ON public.v_osm_polygons_admin_4 TO postgres;
-```
+GRANT SELECT ON map_data.v_osm_polygons_admin_4 TO pgtileserv_user;
 
-```sql
-CREATE OR REPLACE VIEW public.v_osm_polygons_admin_5
+CREATE OR REPLACE VIEW map_data.v_osm_polygons_admin_5
 as select osm_id, admin_level, name, way_area, way
-FROM public.planet_osm_polygon
+FROM map_data.planet_osm_polygon
 where
  name is not null and
  amenity is null and
@@ -117,13 +115,11 @@ where
  admin_level = '5'
 ;
 
-GRANT SELECT ON public.v_osm_polygons_admin_5 TO postgres;
-```
+GRANT SELECT ON map_data.v_osm_polygons_admin_5 TO pgtileserv_user;
 
-```sql
-CREATE OR REPLACE VIEW public.v_osm_polygons_admin_6
+CREATE OR REPLACE VIEW map_data.v_osm_polygons_admin_6
 as select osm_id, admin_level, name, way_area, way
-FROM public.planet_osm_polygon
+FROM map_data.planet_osm_polygon
 where
  name is not null and
  amenity is null and
@@ -136,5 +132,5 @@ where
  admin_level = '6'
 ;
 
-GRANT SELECT ON public.v_osm_polygons_admin_6 TO postgres;
+GRANT SELECT ON map_data.v_osm_polygons_admin_6 TO pgtileserv_user;
 ```

@@ -1,8 +1,7 @@
-@import 'tailwindcss';
-@plugin '@tailwindcss/forms';
-@plugin '@tailwindcss/typography';
-@plugin 'daisyui';
-@import 'leaflet/dist/leaflet.css';
+@import "tailwindcss";
+@plugin "@tailwindcss/forms";
+@plugin "@tailwindcss/typography";
+@plugin "daisyui";
 
 #map {
 	height: 180px;

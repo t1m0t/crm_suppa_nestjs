@@ -24,7 +24,7 @@ GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA main TO migration_user_supp_crm;
 CREATE USER app_user_supp_crm WITH PASSWORD 'your_secure_app_password';
 REVOKE ALL PRIVILEGES ON ALL TABLES IN SCHEMA main FROM app_user_supp_crm;
 GRANT SELECT, UPDATE, DELETE, INSERT ON ALL TABLES IN SCHEMA main TO app_user_supp_crm;
-GRANT USAGE ON ALL SEQUENCES IN SCHEMA public TO app_user_supp_crm;
+GRANT USAGE ON ALL SEQUENCES IN SCHEMA map_data.TO app_user_supp_crm;
 ```
 
 ## Apply grants for future created object

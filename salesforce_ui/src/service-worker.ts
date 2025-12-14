@@ -9,25 +9,25 @@
 
 declare let self: ServiceWorkerGlobalScope;
 
-import { build, files, version } from '$service-worker';
+import { build, files, version } from "$service-worker";
 
 // Add error handling for development
 try {
 	console.log({ build, files, version });
 } catch (error) {
-	console.warn('Service worker imports not available:', error);
+	console.warn("Service worker imports not available:", error);
 }
 
 // Create a unique cache name for this deployment
-const CACHE = `cache-${version || 'dev'}`;
+const CACHE = `cache-${version || "dev"}`;
 
 const ASSETS = [
 	...(build || []), // the app itself
-	...(files || []) // everything in `static`
+	...(files || []), // everything in `static`
 ];
 
-self.addEventListener('install', (event) => {
-	console.log('Service worker installing...');
+self.addEventListener("install", (event) => {
+	console.log("Service worker installing...");
 	// Create a new cache and add all files to it
 	async function addFilesToCache() {
 		const cache = await caches.open(CACHE);
@@ -37,8 +37,8 @@ self.addEventListener('install', (event) => {
 	event.waitUntil(addFilesToCache());
 });
 
-self.addEventListener('activate', (event) => {
-	console.log('Service worker activating...');
+self.addEventListener("activate", (event) => {
+	console.log("Service worker activating...");
 	// Remove previous cached data from disk
 	async function deleteOldCaches() {
 		for (const key of await caches.keys()) {
@@ -49,9 +49,9 @@ self.addEventListener('activate', (event) => {
 	event.waitUntil(deleteOldCaches());
 });
 
-self.addEventListener('fetch', (event) => {
+self.addEventListener("fetch", (event) => {
 	// ignore POST requests etc
-	if (event.request.method !== 'GET') return;
+	if (event.request.method !== "GET") return;
 
 	async function respond() {
 		const url = new URL(event.request.url);
@@ -74,7 +74,7 @@ self.addEventListener('fetch', (event) => {
 			// if we're offline, fetch can return a value that is not a Response
 			// instead of throwing - and we can't pass this non-Response to respondWith
 			if (!(response instanceof Response)) {
-				throw new Error('invalid response from fetch');
+				throw new Error("invalid response from fetch");
 			}
 
 			if (response.status === 200) {

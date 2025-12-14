@@ -1,5 +1,5 @@
-import adapter from '@sveltejs/adapter-static';
-import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
+import adapter from "@sveltejs/adapter-static";
+import { vitePreprocess } from "@sveltejs/vite-plugin-svelte";
 
 /** @type {import('@sveltejs/kit').Config} */
 const config = {
@@ -8,15 +8,15 @@ const config = {
 	preprocess: vitePreprocess(),
 	kit: {
 		adapter: adapter({
-			fallback: 'index.html'
+			fallback: "index.html",
 		}),
 		alias: {
-			'@/*': './src/*'
+			"@/*": "./src/*",
 		},
 		serviceWorker: {
-			register: process.env.NODE_ENV === 'production' // Only register in production
-		}
-	}
+			register: process.env.NODE_ENV === "production", // Only register in production
+		},
+	},
 };
 
 export default config;

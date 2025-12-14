@@ -147,7 +147,7 @@ GRANT USAGE, SELECT ON SEQUENCES TO role_app_rw;
 -- -----------------------
 REVOKE ALL ON SCHEMA map_data, backoffice_data FROM admin_user;
 
--- necessary for migration to have point as a FK
+-- necessary for migration 001 to have point as a FK
 ALTER TABLE map_data.planet_osm_point
 ADD COLUMN id BIGSERIAL PRIMARY KEY;
 
@@ -155,4 +155,13 @@ GRANT REFERENCES ON ALL TABLES IN SCHEMA map_data TO role_migrate;
 ALTER DEFAULT PRIVILEGES FOR ROLE role_migrate IN SCHEMA map_data
 GRANT REFERENCES ON TABLES TO role_migrate;
 
+-- 9. Create pg_tileserv user, read only on map_data schema
+CREATE ROLE pgtileserv_user LOGIN PASSWORD 'pgtileserv_password';
+GRANT USAGE ON SCHEMA map_data TO pgtileserv_user;
+GRANT SELECT ON ALL TABLES IN SCHEMA map_data TO pgtileserv_user;
+ALTER DEFAULT PRIVILEGES IN SCHEMA map_data
+GRANT SELECT ON TABLES TO pgtileserv_user;
+ALTER DEFAULT PRIVILEGES IN SCHEMA map_data
+GRANT USAGE ON SEQUENCES TO pgtileserv_user;
+REVOKE ALL ON SCHEMA public FROM pgtileserv_user;
 ```

@@ -33,5 +33,6 @@
 		// Bundler
 		"allowImportingTsExtensions": true,
 		"noEmit": true
-	}
+	},
+	"exclude": ["db"]
 }

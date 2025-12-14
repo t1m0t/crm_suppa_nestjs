@@ -1,7 +1,6 @@
 import { Module } from "@nestjs/common";
 import { ScheduleModule } from "@nestjs/schedule";
 import { TileController } from "./tile.controller";
-import { PostgresCacheService } from "./postgres-cache.service";
 import { HttpModule } from "@nestjs/axios";
 
 @Module({
@@ -10,7 +9,5 @@ import { HttpModule } from "@nestjs/axios";
 		HttpModule,
 	],
 	controllers: [TileController],
-	providers: [PostgresCacheService],
-	exports: [PostgresCacheService],
 })
 export class TileModule {}
